@@ -1,0 +1,22 @@
+[package]
+name = "moebius-bridge"
+version = "0.1.0"
+authors = ["Rohit Narurkar <rohit.narurkar@protonmail.com>"]
+edition = "2018"
+
+[lib]
+name = "moebius"
+path = "src/lib.rs"
+
+[[bin]]
+name = "moebius-bridge"
+path = "src/bin/main.rs"
+
+[dependencies]
+anyhow = "1.0.32"
+ethers = { git = "https://github.com/gakonst/ethers-rs" }
+thiserror = "1.0.20"
+tokio = { version = "0.2.22", features = ["macros"] }
+
+[build-dependencies]
+ethers = { git = "https://github.com/gakonst/ethers-rs", features = ["abigen"] }
