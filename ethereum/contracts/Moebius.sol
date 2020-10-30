@@ -3,7 +3,7 @@ pragma solidity ^0.7.0;
 
 
 contract Moebius {
-  event MoebiusData(bytes32 indexed _accountId, bytes _packedData);
+  event MoebiusData(bytes32 _accountId, bytes _packedData);
 
   function execute(address _target, bytes memory _data)
     public
@@ -26,8 +26,7 @@ contract Moebius {
         revert(add(response, 0x20), size)
       }
       default {
-        let _accountId := mload(add(response, 0x20))
-        log2(add(response, 0x20), size, _topic, _accountId)
+        log1(add(response, 0x20), size, _topic)
       }
     }
   }

@@ -16,13 +16,7 @@ mod moebius_mod {
     #[doc = "Moebius was auto-generated with ethers-rs Abigen. More information at: https://github.com/gakonst/ethers-rs"]
     use std::sync::Arc;
     pub static MOEBIUS_ABI: Lazy<Abi> = Lazy::new(|| {
-        let abi_str = "[\n    event MoebiusData(bytes32 _accountId, bytes _packedData)\n    function execute(address _target, bytes memory _data) public returns (bytes memory _response)\n]" . replace ('[' , "") . replace (']' , "") . replace (',' , "") ;
-        let split: Vec<&str> = abi_str
-            .split("\n")
-            .map(|x| x.trim())
-            .filter(|x| !x.is_empty())
-            .collect();
-        parse_abi(&split).expect("invalid abi")
+        serde_json :: from_str ("[\n  {\n    \"anonymous\": false,\n    \"inputs\": [\n      {\n        \"indexed\": false,\n        \"internalType\": \"bytes32\",\n        \"name\": \"_accountId\",\n        \"type\": \"bytes32\"\n      },\n      {\n        \"indexed\": false,\n        \"internalType\": \"bytes\",\n        \"name\": \"_packedData\",\n        \"type\": \"bytes\"\n      }\n    ],\n    \"name\": \"MoebiusData\",\n    \"type\": \"event\"\n  },\n  {\n    \"inputs\": [\n      {\n        \"internalType\": \"address\",\n        \"name\": \"_target\",\n        \"type\": \"address\"\n      },\n      {\n        \"internalType\": \"bytes\",\n        \"name\": \"_data\",\n        \"type\": \"bytes\"\n      }\n    ],\n    \"name\": \"execute\",\n    \"outputs\": [\n      {\n        \"internalType\": \"bytes\",\n        \"name\": \"response\",\n        \"type\": \"bytes\"\n      }\n    ],\n    \"stateMutability\": \"nonpayable\",\n    \"type\": \"function\"\n  }\n]\n") . expect ("invalid abi")
     });
     #[derive(Clone)]
     pub struct Moebius<M>(Contract<M>);
@@ -47,10 +41,10 @@ mod moebius_mod {
             let contract = Contract::new(address.into(), MOEBIUS_ABI.clone(), client);
             Self(contract)
         }
-        #[doc = "Calls the contract's `execute` (0x4b64e492) function"]
-        pub fn execute(&self, target: Address) -> ContractCall<M, Vec<u8>> {
+        #[doc = "Calls the contract's `execute` (0x1cff79cd) function"]
+        pub fn execute(&self, target: Address, data: Vec<u8>) -> ContractCall<M, Vec<u8>> {
             self.0
-                .method_hash([75, 100, 228, 146], target)
+                .method_hash([28, 255, 121, 205], (target, data))
                 .expect("method not found (this should never happen)")
         }
         #[doc = "Gets the contract's `MoebiusData` event"]
@@ -61,38 +55,48 @@ mod moebius_mod {
         }
     }
     #[derive(Clone, Debug, Default, Eq, PartialEq)]
-    pub struct MoebiusDataFilter();
+    pub struct MoebiusDataFilter {
+        pub account_id: [u8; 32],
+        pub packed_data: Vec<u8>,
+    }
     impl MoebiusDataFilter {
         #[doc = r" Retrieves the signature for the event this data corresponds to."]
         #[doc = r" This signature is the Keccak-256 hash of the ABI signature of"]
         #[doc = r" this event."]
         pub const fn signature() -> H256 {
             H256([
-                12, 186, 2, 153, 234, 218, 97, 112, 143, 230, 187, 185, 147, 160, 0, 188, 176, 159,
-                105, 61, 15, 99, 29, 32, 245, 6, 55, 38, 229, 94, 224, 221,
+                240, 43, 213, 95, 196, 19, 99, 144, 36, 147, 52, 69, 139, 199, 53, 180, 135, 72,
+                189, 254, 146, 130, 8, 222, 50, 70, 107, 213, 38, 104, 79, 82,
             ])
         }
         #[doc = r" Retrieves the ABI signature for the event this data corresponds"]
         #[doc = r" to. For this event the value should always be:"]
         #[doc = r""]
-        #[doc = "`MoebiusData()`"]
+        #[doc = "`MoebiusData(bytes32,bytes)`"]
         pub const fn abi_signature() -> &'static str {
-            "MoebiusData()"
+            "MoebiusData(bytes32,bytes)"
         }
     }
     impl Detokenize for MoebiusDataFilter {
         fn from_tokens(tokens: Vec<Token>) -> Result<Self, InvalidOutputType> {
-            if tokens.len() != 0 {
+            if tokens.len() != 2 {
                 return Err(InvalidOutputType(format!(
                     "Expected {} tokens, got {}: {:?}",
-                    0,
+                    2,
                     tokens.len(),
                     tokens
                 )));
             }
             #[allow(unused_mut)]
             let mut tokens = tokens.into_iter();
-            Ok(MoebiusDataFilter())
+            let account_id =
+                Tokenizable::from_token(tokens.next().expect("this should never happen"))?;
+            let packed_data =
+                Tokenizable::from_token(tokens.next().expect("this should never happen"))?;
+            Ok(MoebiusDataFilter {
+                account_id,
+                packed_data,
+            })
         }
     }
 }

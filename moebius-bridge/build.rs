@@ -1,12 +1,7 @@
 use ethers::contract::Abigen;
 
-static MOEBIUS_ABI: &str = r#"[
-    event MoebiusData(bytes32 _accountId, bytes _packedData)
-    function execute(address _target, bytes memory _data) public returns (bytes memory _response)
-]"#;
-
 fn main() {
-    let bindings = Abigen::new("Moebius", MOEBIUS_ABI)
+    let bindings = Abigen::new("Moebius", "./abi/moebius.json")
         .expect("could not instantiate Abigen")
         .generate()
         .expect("could not generate bindings");

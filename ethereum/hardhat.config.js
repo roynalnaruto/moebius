@@ -1,3 +1,4 @@
+require("@nomiclabs/hardhat-ganache");
 require("@nomiclabs/hardhat-waffle");
 
 // This is a sample Hardhat task. To learn how to create your own go to
@@ -18,4 +19,14 @@ task("accounts", "Prints the list of accounts", async () => {
  */
 module.exports = {
   solidity: "0.7.3",
+  defaultNetwork: "ganache",
+  networks: {
+    ganache: {
+      gasLimit: 10000000,
+      defaultBalanceEther: 100,
+      url: "http://localhost:8545",
+      network_id: 98765,
+      mnemonic: "these are simply test words my friend"
+    }
+  }
 };
