@@ -1,25 +1,64 @@
-// We require the Hardhat Runtime Environment explicitly here. This is optional 
+// We require the Hardhat Runtime Environment explicitly here. This is optional
 // but useful for running the script in a standalone fashion through `node <script>`.
 //
 // When running the script with `hardhat run <script>` you'll find the Hardhat
 // Runtime Environment's members available in the global scope.
 const hre = require("hardhat");
+const Logger = require("pretty-logger");
+
+const customConfig = {
+  showMillis: true,
+  showTimestamp: true,
+  info: "gray",
+  error: ["bgRed", "bold"],
+  debug: "rainbow"
+};
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
 
 async function main() {
   // Hardhat always runs the compile task when running scripts with its command
   // line interface.
   //
-  // If this script is run directly using `node` you may want to call compile 
+  // If this script is run directly using `node` you may want to call compile
   // manually to make sure everything is compiled
-  // await hre.run('compile');
+  const log = new Logger(customConfig)
+  await hre.run('compile');
 
   // We get the contract to deploy
-  const Greeter = await hre.ethers.getContractFactory("Greeter");
-  const greeter = await Greeter.deploy("Hello, Hardhat!");
+  const Moebius = await hre.ethers.getContractFactory("Moebius");
+  const moebius = await Moebius.deploy();
+  await moebius.deployed();
+  log.info("Moebius deployed at: ", moebius.address);
 
-  await greeter.deployed();
+  const SimpleContract = await hre.ethers.getContractFactory("SimpleContract");
+  const simpleContract = await SimpleContract.deploy(
+    hre.ethers.utils.hexlify(hre.ethers.utils.randomBytes(32)),
+    hre.ethers.utils.hexlify(hre.ethers.utils.randomBytes(32)),
+    hre.ethers.utils.hexlify(hre.ethers.utils.randomBytes(20)),
+    hre.ethers.BigNumber.from(hre.ethers.utils.randomBytes(32)),
+  );
+  await simpleContract.deployed();
+  log.info("SimpleContract deployed at: ", simpleContract.address);
 
-  console.log("Greeter deployed to:", greeter.address);
+  const target = simpleContract.address;
+  while (true) {
+    const data = simpleContract.interface.encodeFunctionData(
+      "setAndGetValues", [
+        hre.ethers.utils.hexlify(hre.ethers.utils.randomBytes(32)),
+        hre.ethers.utils.hexlify(hre.ethers.utils.randomBytes(32)),
+        hre.ethers.utils.hexlify(hre.ethers.utils.randomBytes(20)),
+        hre.ethers.BigNumber.from(hre.ethers.utils.randomBytes(32)),
+      ]);
+
+    const tx = await moebius.execute(target, data);
+    log.info("setAndGetValues: ", tx.hash);
+
+    log.debug("sleeping...\n");
+    await sleep(10000);
+  }
 }
 
 // We recommend this pattern to be able to use async/await everywhere
