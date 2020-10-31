@@ -1,0 +1,23 @@
+[package]
+name = "moebius"
+version = "0.1.0"
+authors = ["Rohit Narurkar <rohit.narurkar@protonmail.com>"]
+edition = "2018"
+
+[features]
+exclude_entrypoint = []
+
+[dependencies]
+num-derive = "0.3"
+num-traits = "0.2"
+remove_dir_all = "=0.5.0"
+solana-program = "1.4.3"
+thiserror = "1.0"
+arrayref = "0.3.6"
+num_enum = "0.5.1"
+
+[dev-dependencies]
+rand = { version = "0.7.0"}
+
+[lib]
+crate-type = ["cdylib", "lib"]
