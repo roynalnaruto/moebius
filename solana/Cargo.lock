@@ -507,6 +507,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "simple-program"
+version = "0.1.0"
+dependencies = [
+ "arrayref",
+ "num-derive",
+ "num-traits",
+ "num_enum",
+ "rand",
+ "remove_dir_all",
+ "solana-program",
+ "thiserror",
+]
+
+[[package]]
 name = "solana-frozen-abi"
 version = "1.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
