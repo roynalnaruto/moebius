@@ -13,7 +13,7 @@ use std::mem::size_of;
 #[repr(C)]
 #[derive(Clone, Debug, PartialEq)]
 pub enum SimpleProgramInstruction {
-    /// Initializes the Moebius program.
+    /// Initializes the Simple program.
     ///
     /// The `Initialize` instruction requires no signers and MUST be included within the same
     /// Transaction as the system program's `CreateInstruction` that creates the account being
@@ -28,6 +28,15 @@ pub enum SimpleProgramInstruction {
         /// The authority that can transport arbitrary data over Moebius.
         authority: Pubkey,
     },
+    /// Updates the state of Simple program.
+    UpdateState {
+        /// Bytes32 field in Simple program's state.
+        val_bytes32: [u8; 32],
+        /// Address field in Simple program's state.
+        val_address: [u8; 20],
+        /// Uint256 field in Simple program's state.
+        val_uint256: [u8; 32],
+    },
 }
 
 impl SimpleProgramInstruction {
@@ -38,6 +47,17 @@ impl SimpleProgramInstruction {
             Self::Initialize { ref authority } => {
                 buf.push(0);
                 buf.extend_from_slice(authority.as_ref());
+            }
+            Self::UpdateState {
+                val_bytes32,
+                val_address,
+                val_uint256,
+            } => {
+                buf.push(1);
+                buf.extend_from_slice(&val_bytes32[..]);
+                buf.extend_from_slice(&[0u8; 12]);
+                buf.extend_from_slice(&val_address[..]);
+                buf.extend_from_slice(&val_uint256[..]);
             }
         }
         buf
@@ -52,6 +72,22 @@ impl SimpleProgramInstruction {
             0 => {
                 let (authority, _rest) = Self::unpack_pubkey(rest)?;
                 Self::Initialize { authority }
+            }
+            1 => {
+                let (val_bytes32_slice, rest) = rest.split_at(32);
+                let (val_address_slice, rest) = rest.split_at(32);
+                let (val_uint256_slice, _rest) = rest.split_at(32);
+                let mut val_bytes32 = [0u8; 32];
+                let mut val_address = [0u8; 20];
+                let mut val_uint256 = [0u8; 32];
+                val_bytes32.copy_from_slice(&val_bytes32_slice[..]);
+                val_address.copy_from_slice(&val_address_slice[12..]);
+                val_uint256.copy_from_slice(&val_uint256_slice[..]);
+                Self::UpdateState {
+                    val_bytes32,
+                    val_address,
+                    val_uint256,
+                }
             }
 
             _ => return Err(InvalidInstruction.into()),
@@ -72,7 +108,7 @@ impl SimpleProgramInstruction {
 /// Creates a `Initialize` instruction.
 pub fn initialize(
     program_id: &Pubkey,
-    moebius_account_id: &Pubkey,
+    simple_program_account_id: &Pubkey,
     authority: &Pubkey,
 ) -> Result<Instruction, ProgramError> {
     let data = SimpleProgramInstruction::Initialize {
@@ -81,8 +117,36 @@ pub fn initialize(
     .pack();
 
     let accounts = vec![
-        AccountMeta::new(*moebius_account_id, false),
+        AccountMeta::new(*simple_program_account_id, false),
         AccountMeta::new_readonly(sysvar::rent::id(), false),
+    ];
+
+    Ok(Instruction {
+        program_id: *program_id,
+        accounts,
+        data,
+    })
+}
+
+/// Creates an `UpdateState` instruction.
+pub fn update_state(
+    program_id: &Pubkey,
+    simple_program_account_id: &Pubkey,
+    authority: &Pubkey,
+    val_bytes32: [u8; 32],
+    val_address: [u8; 20],
+    val_uint256: [u8; 32],
+) -> Result<Instruction, ProgramError> {
+    let data = SimpleProgramInstruction::UpdateState {
+        val_bytes32,
+        val_address,
+        val_uint256,
+    }
+    .pack();
+
+    let accounts = vec![
+        AccountMeta::new(*simple_program_account_id, false),
+        AccountMeta::new(*authority, false),
     ];
 
     Ok(Instruction {
@@ -95,15 +159,49 @@ pub fn initialize(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rand::RngCore;
+
+    fn rand_bytes(n: usize) -> Vec<u8> {
+        let mut output = vec![0u8; n];
+        rand::thread_rng().fill_bytes(output.as_mut_slice());
+        output
+    }
 
     #[test]
-    fn test_instruction_packing() {
+    fn test_initialize_packing() {
         let check = SimpleProgramInstruction::Initialize {
             authority: Pubkey::new(&[2u8; 32]),
         };
         let packed = check.pack();
         let mut expect = vec![0u8]; // Initialize tag.
         expect.extend_from_slice(&[2u8; 32]);
+        assert_eq!(packed, expect);
+        let unpacked = SimpleProgramInstruction::unpack(&expect).unwrap();
+        assert_eq!(unpacked, check);
+    }
+
+    #[test]
+    fn test_update_state_packing() {
+        let rand_val_bytes32 = rand_bytes(32usize);
+        let rand_val_address = rand_bytes(20usize);
+        let rand_val_uint256 = rand_bytes(32usize);
+        let mut val_bytes32 = [0u8; 32];
+        let mut val_address = [0u8; 20];
+        let mut val_uint256 = [0u8; 32];
+        val_bytes32.copy_from_slice(rand_val_bytes32.as_slice());
+        val_address.copy_from_slice(rand_val_address.as_slice());
+        val_uint256.copy_from_slice(rand_val_uint256.as_slice());
+        let check = SimpleProgramInstruction::UpdateState {
+            val_bytes32: val_bytes32,
+            val_address: val_address,
+            val_uint256: val_uint256,
+        };
+        let packed = check.pack();
+        let mut expect = vec![1u8]; // Initialize tag.
+        expect.extend_from_slice(rand_val_bytes32.as_slice());
+        expect.extend_from_slice(&[0u8; 12]);
+        expect.extend_from_slice(rand_val_address.as_slice());
+        expect.extend_from_slice(rand_val_uint256.as_slice());
         assert_eq!(packed, expect);
         let unpacked = SimpleProgramInstruction::unpack(&expect).unwrap();
         assert_eq!(unpacked, check);
