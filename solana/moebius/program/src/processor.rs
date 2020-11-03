@@ -83,6 +83,15 @@ impl Processor {
             return Err(ProgramError::MissingRequiredSignature);
         }
 
+        // Make sure that the target program account is in fact an executable program, and that it
+        // owns the target account whose state must be updated.
+        if !target_program_account_info.executable {
+            return Err(MoebiusError::TargetProgramNotExecutable.into());
+        }
+        if *target_program_account_info.key != *target_account_account_info.owner {
+            return Err(MoebiusError::TargetOwnershipMismatch.into());
+        }
+
         // Find the derived program address that should be the authority of the target program.
         let (caller_address, bump_seed) = Pubkey::find_program_address(
             &[
@@ -144,6 +153,12 @@ impl PrintProgramError for MoebiusError {
             }
             MoebiusError::DerivedAccountMismatch => {
                 info!("Error: The derived program account does not match the expected account")
+            }
+            MoebiusError::TargetProgramNotExecutable => {
+                info!("Error: The target program account is not an executable")
+            }
+            MoebiusError::TargetOwnershipMismatch => {
+                info!("Error: The target account is not owned by the target program account")
             }
         }
     }

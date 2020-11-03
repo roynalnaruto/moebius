@@ -22,6 +22,12 @@ pub enum MoebiusError {
     /// The derived program account does not match the expected account.
     #[error("Derived program account mismatch")]
     DerivedAccountMismatch,
+    /// The target program account does not have a loaded executable.
+    #[error("Target program account is not executable")]
+    TargetProgramNotExecutable,
+    /// The target account is not owned by the target program account.
+    #[error("Target account not owned by target program")]
+    TargetOwnershipMismatch,
 }
 
 impl From<MoebiusError> for ProgramError {
