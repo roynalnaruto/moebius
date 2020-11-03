@@ -11,7 +11,7 @@ use solana_program::{
     decode_error::DecodeError,
     entrypoint::ProgramResult,
     info,
-    program_error::PrintProgramError,
+    program_error::{PrintProgramError, ProgramError},
     program_pack::Pack,
     pubkey::Pubkey,
     sysvar::{rent::Rent, Sysvar},
@@ -81,14 +81,17 @@ impl Processor {
         val_uint256: [u8; 32],
     ) -> ProgramResult {
         let account_info_iter = &mut accounts.iter();
-        let simple_program_account_info = next_account_info(account_info_iter)?;
         let authority_info = next_account_info(account_info_iter)?;
+        let simple_program_account_info = next_account_info(account_info_iter)?;
 
         let mut state =
             SimpleProgram::unpack_unchecked(&simple_program_account_info.data.borrow())?;
 
         if authority_info.key != &state.authority {
             return Err(SimpleProgramError::Unauthorized.into());
+        }
+        if !authority_info.is_signer {
+            return Err(ProgramError::MissingRequiredSignature);
         }
 
         state.val_bytes32 = val_bytes32;
@@ -261,7 +264,7 @@ mod tests {
                     new_val_uint256,
                 )
                 .unwrap(),
-                vec![&mut simple_program_account, &mut authority],
+                vec![&mut authority, &mut simple_program_account],
             )
         );
 
@@ -275,9 +278,9 @@ mod tests {
                 new_val_uint256,
             )
             .unwrap(),
-            vec![&mut simple_program_account, &mut authority],
+            vec![&mut authority, &mut simple_program_account],
         )
-        .is_ok(),);
+        .is_ok());
 
         let new_state = SimpleProgram::unpack(&simple_program_account.data).unwrap();
 

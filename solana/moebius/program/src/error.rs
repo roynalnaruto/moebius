@@ -19,6 +19,9 @@ pub enum MoebiusError {
     /// The sender is not authorized to do the transaction.
     #[error("Unauthorized")]
     Unauthorized,
+    /// The derived program account does not match the expected account.
+    #[error("Derived program account mismatch")]
+    DerivedAccountMismatch,
 }
 
 impl From<MoebiusError> for ProgramError {

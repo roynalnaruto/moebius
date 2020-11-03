@@ -28,6 +28,11 @@ pub enum MoebiusInstruction {
         /// The authority that can transport arbitrary data over Moebius.
         authority: Pubkey,
     },
+    /// Represents the instruction to update an account's state via a program.
+    UpdateData {
+        /// Instruction data to update state.
+        data: Vec<u8>,
+    },
 }
 
 impl MoebiusInstruction {
@@ -38,6 +43,11 @@ impl MoebiusInstruction {
             Self::Initialize { ref authority } => {
                 buf.push(0);
                 buf.extend_from_slice(authority.as_ref());
+            }
+            Self::UpdateData { data } => {
+                buf.push(1);
+                buf.extend_from_slice(&(data.len() as u64).to_le_bytes());
+                buf.extend_from_slice(data.as_slice());
             }
         }
         buf
@@ -52,6 +62,16 @@ impl MoebiusInstruction {
             0 => {
                 let (authority, _rest) = Self::unpack_pubkey(rest)?;
                 Self::Initialize { authority }
+            }
+            1 => {
+                let (len, rest) = rest.split_at(8);
+                let mut data_len_le_bytes = [0u8; 8];
+                data_len_le_bytes.copy_from_slice(len);
+                let data_len = u64::from_le_bytes(data_len_le_bytes);
+                let (data, _rest) = rest.split_at(data_len as usize);
+                Self::UpdateData {
+                    data: data.to_vec(),
+                }
             }
 
             _ => return Err(InvalidInstruction.into()),
@@ -92,18 +112,59 @@ pub fn initialize(
     })
 }
 
+/// Creates a `UpdateData` instruction.
+pub fn update_data(
+    program_id: &Pubkey,
+    moebius_account_id: &Pubkey,
+    authority_id: &Pubkey,
+    caller_account_id: &Pubkey,
+    target_program_id: &Pubkey,
+    target_account_id: &Pubkey,
+    data: Vec<u8>,
+) -> Result<Instruction, ProgramError> {
+    let instruction_data = MoebiusInstruction::UpdateData { data }.pack();
+
+    let accounts = vec![
+        AccountMeta::new(*moebius_account_id, false),
+        AccountMeta::new(*authority_id, true), // signer of the transaction.
+        AccountMeta::new(*caller_account_id, false),
+        AccountMeta::new(*target_program_id, false),
+        AccountMeta::new(*target_account_id, false),
+    ];
+
+    Ok(Instruction {
+        program_id: *program_id,
+        accounts,
+        data: instruction_data,
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    fn test_instruction_packing() {
+    fn test_initialize_packing() {
         let check = MoebiusInstruction::Initialize {
             authority: Pubkey::new(&[2u8; 32]),
         };
         let packed = check.pack();
         let mut expect = vec![0u8]; // Initialize tag.
         expect.extend_from_slice(&[2u8; 32]);
+        assert_eq!(packed, expect);
+        let unpacked = MoebiusInstruction::unpack(&expect).unwrap();
+        assert_eq!(unpacked, check);
+    }
+
+    #[test]
+    fn test_update_data_packing() {
+        let check = MoebiusInstruction::UpdateData {
+            data: [5u8; 23].to_vec(),
+        };
+        let packed = check.pack();
+        let mut expect = vec![1u8]; // UpdateData tag.
+        expect.extend_from_slice(&(23u64.to_le_bytes()));
+        expect.extend_from_slice(&[5u8; 23]);
         assert_eq!(packed, expect);
         let unpacked = MoebiusInstruction::unpack(&expect).unwrap();
         assert_eq!(unpacked, check);

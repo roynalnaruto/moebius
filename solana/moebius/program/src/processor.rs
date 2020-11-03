@@ -9,7 +9,9 @@ use solana_program::{
     decode_error::DecodeError,
     entrypoint::ProgramResult,
     info,
-    program_error::PrintProgramError,
+    instruction::{AccountMeta, Instruction},
+    program::invoke_signed,
+    program_error::{PrintProgramError, ProgramError},
     program_pack::Pack,
     pubkey::Pubkey,
     sysvar::{rent::Rent, Sysvar},
@@ -19,13 +21,17 @@ use solana_program::{
 pub struct Processor {}
 impl Processor {
     /// Processes an [Instruction](enum.MoebiusInstruction.html).
-    pub fn process(_program_id: &Pubkey, accounts: &[AccountInfo], input: &[u8]) -> ProgramResult {
+    pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], input: &[u8]) -> ProgramResult {
         let instruction = MoebiusInstruction::unpack(input)?;
 
         match instruction {
             MoebiusInstruction::Initialize { authority } => {
                 info!("Instruction: Initialize");
                 Self::process_initialize(accounts, authority)
+            }
+            MoebiusInstruction::UpdateData { data } => {
+                info!("Instruction: UpdateData");
+                Self::process_update_data(program_id, accounts, data)
             }
         }
     }
@@ -53,6 +59,73 @@ impl Processor {
 
         Ok(())
     }
+
+    /// Processes an [UpdateData](enum.MoebiusInstruction.html) instruction.
+    pub fn process_update_data(
+        program_id: &Pubkey,
+        accounts: &[AccountInfo],
+        data: Vec<u8>,
+    ) -> ProgramResult {
+        let account_info_iter = &mut accounts.iter();
+        let moebius_account_info = next_account_info(account_info_iter)?;
+        let authority_info = next_account_info(account_info_iter)?;
+        let caller_account_info = next_account_info(account_info_iter)?;
+        let target_program_account_info = next_account_info(account_info_iter)?;
+        let target_account_account_info = next_account_info(account_info_iter)?;
+
+        // Unpack moebius' state and verify that moebius authority is in fact the account that has
+        // submitted this signed transaction.
+        let state = Moebius::unpack_unchecked(&moebius_account_info.data.borrow())?;
+        if authority_info.key != &state.authority {
+            return Err(MoebiusError::Unauthorized.into());
+        }
+        if !authority_info.is_signer {
+            return Err(ProgramError::MissingRequiredSignature);
+        }
+
+        // Find the derived program address that should be the authority of the target program.
+        let (caller_address, bump_seed) = Pubkey::find_program_address(
+            &[
+                &target_program_account_info.key.to_bytes(),
+                &target_account_account_info.key.to_bytes(),
+            ],
+            &program_id,
+        );
+        if caller_address != *caller_account_info.key {
+            return Err(MoebiusError::DerivedAccountMismatch.into());
+        }
+
+        // Construct the seeds for the above derived program address.
+        let caller_account_signer_seeds: &[&[_]] = &[
+            &target_program_account_info.key.to_bytes(),
+            &target_account_account_info.key.to_bytes(),
+            &[bump_seed],
+        ];
+
+        // Construct the instruction to be invoked in the target program, that will be signed by
+        // Moebius program.
+        let target_update_instruction = Instruction {
+            program_id: *target_program_account_info.key,
+            accounts: vec![
+                AccountMeta::new(*caller_account_info.key, true),
+                AccountMeta::new(*target_account_account_info.key, false),
+            ],
+            data,
+        };
+
+        // Invoke the instruction in the target program. An authorised invocation should update
+        // the target account's state via the target program.
+        invoke_signed(
+            &target_update_instruction,
+            &[
+                caller_account_info.clone(),
+                target_account_account_info.clone(),
+            ],
+            &[caller_account_signer_seeds],
+        )?;
+
+        Ok(())
+    }
 }
 
 impl PrintProgramError for MoebiusError {
@@ -68,6 +141,9 @@ impl PrintProgramError for MoebiusError {
             }
             MoebiusError::Unauthorized => {
                 info!("Error: Account not authorized to do the transaction")
+            }
+            MoebiusError::DerivedAccountMismatch => {
+                info!("Error: The derived program account does not match the expected account")
             }
         }
     }
@@ -167,5 +243,10 @@ mod tests {
 
         assert_eq!(moebius.is_initialized, true);
         assert_eq!(moebius.authority, authority);
+    }
+
+    #[test]
+    fn test_update_data() {
+        todo!();
     }
 }

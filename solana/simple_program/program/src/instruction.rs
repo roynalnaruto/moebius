@@ -145,8 +145,8 @@ pub fn update_state(
     .pack();
 
     let accounts = vec![
+        AccountMeta::new(*authority, true),
         AccountMeta::new(*simple_program_account_id, false),
-        AccountMeta::new(*authority, false),
     ];
 
     Ok(Instruction {
