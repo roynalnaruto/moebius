@@ -1,8 +1,5 @@
 //! Program entrypoint
 
-#![cfg(feature = "program")]
-#![cfg(not(feature = "no-entrypoint"))]
-
 use crate::{error::MoebiusError, processor::Processor};
 use solana_program::{
     account_info::AccountInfo, entrypoint, entrypoint::ProgramResult,

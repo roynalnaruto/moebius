@@ -1,7 +1,5 @@
 //! Program state processor
 
-#![cfg(feature = "program")]
-
 use crate::{error::MoebiusError, instruction::MoebiusInstruction, state::Moebius};
 use num_traits::FromPrimitive;
 use solana_program::{

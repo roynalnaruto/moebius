@@ -98,10 +98,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4785bdd1c96b2a846b2bd7cc02e86b6b3dbf14e7e53446c4f54c92a361040822"
 
 [[package]]
-name = "cli"
-version = "0.1.0"
-
-[[package]]
 name = "curve25519-dalek"
 version = "2.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -279,6 +275,10 @@ dependencies = [
  "solana-program",
  "thiserror",
 ]
+
+[[package]]
+name = "moebius-cli"
+version = "0.1.0"
 
 [[package]]
 name = "num-derive"

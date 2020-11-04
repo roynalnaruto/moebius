@@ -1,0 +1,6 @@
+{
+  "testnetDefaultChannel": "v1.3.17",
+  "dependencies": {
+    "@solana/web3.js": "^0.86.4"
+  }
+}

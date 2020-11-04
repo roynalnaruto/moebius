@@ -1,7 +1,5 @@
 //! Program state processor
 
-#![cfg(feature = "program")]
-
 use crate::{
     error::SimpleProgramError, instruction::SimpleProgramInstruction, state::SimpleProgram,
 };
@@ -21,13 +19,13 @@ use solana_program::{
 pub struct Processor {}
 impl Processor {
     /// Processes an [Instruction](enum.SimpleProgramInstruction.html).
-    pub fn process(_program_id: &Pubkey, accounts: &[AccountInfo], input: &[u8]) -> ProgramResult {
+    pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], input: &[u8]) -> ProgramResult {
         let instruction = SimpleProgramInstruction::unpack(input)?;
 
         match instruction {
-            SimpleProgramInstruction::Initialize { authority } => {
+            SimpleProgramInstruction::Initialize { moebius_program_id } => {
                 info!("Instruction: Initialize");
-                Self::process_initialize(accounts, authority)
+                Self::process_initialize(program_id, accounts, moebius_program_id)
             }
             SimpleProgramInstruction::UpdateState {
                 val_bytes32,
@@ -41,13 +39,19 @@ impl Processor {
     }
 
     /// Processes an [Initialize](enum.SimpleProgramInstruction.html) instruction.
-    pub fn process_initialize(accounts: &[AccountInfo], authority: Pubkey) -> ProgramResult {
+    pub fn process_initialize(
+        program_id: &Pubkey,
+        accounts: &[AccountInfo],
+        moebius_program_id: Pubkey,
+    ) -> ProgramResult {
         let account_info_iter = &mut accounts.iter();
         let simple_program_account_info = next_account_info(account_info_iter)?;
         let simple_program_data_len = simple_program_account_info.data_len();
         let rent = &Rent::from_account_info(next_account_info(account_info_iter)?)?;
 
-        if simple_program_account_info.data.borrow()[0] != 0u8 {
+        // Ensure that this account has not already been put into use.
+        let state = SimpleProgram::unpack_unchecked(&simple_program_account_info.data.borrow())?;
+        if state.is_initialized {
             return Err(SimpleProgramError::AlreadyInUse.into());
         }
 
@@ -58,17 +62,25 @@ impl Processor {
             return Err(SimpleProgramError::NotRentExempt.into());
         }
 
-        let simple_program = SimpleProgram {
+        // Calculate the program derived address that will be used as authority from Moebius'
+        // program.
+        let (authority, _) = Pubkey::find_program_address(
+            &[
+                &program_id.to_bytes(),
+                &simple_program_account_info.key.to_bytes(),
+            ],
+            &moebius_program_id,
+        );
+
+        // Initialize the state of simple program account and write it.
+        let state = SimpleProgram {
             is_initialized: true,
             authority: authority,
             val_bytes32: [0u8; 32],
             val_address: [0u8; 20],
             val_uint256: [0u8; 32],
         };
-        SimpleProgram::pack(
-            simple_program,
-            &mut simple_program_account_info.data.borrow_mut(),
-        )?;
+        SimpleProgram::pack(state, &mut simple_program_account_info.data.borrow_mut())?;
 
         Ok(())
     }
@@ -187,17 +199,17 @@ mod tests {
     #[test]
     fn test_initialize() {
         let program_id = pubkey_rand();
-        let authority = pubkey_rand();
         let simple_program_account_id = pubkey_rand();
         let mut simple_program_account = SolanaAccount::new(42, SimpleProgram::LEN, &program_id);
         let mut rent_sysvar = rent_sysvar();
+        let moebius_program_id = pubkey_rand();
 
         // when the simple_program account is not rent exempt.
         assert_eq!(
             Err(SimpleProgramError::NotRentExempt.into()),
             do_process_instruction(
-                initialize(&program_id, &simple_program_account_id, &authority).unwrap(),
-                vec![&mut simple_program_account, &mut rent_sysvar]
+                initialize(&program_id, &simple_program_account_id, &moebius_program_id).unwrap(),
+                vec![&mut simple_program_account, &mut rent_sysvar],
             )
         );
 
@@ -205,7 +217,7 @@ mod tests {
 
         // create new simple_program account.
         do_process_instruction(
-            initialize(&program_id, &simple_program_account_id, &authority).unwrap(),
+            initialize(&program_id, &simple_program_account_id, &moebius_program_id).unwrap(),
             vec![&mut simple_program_account, &mut rent_sysvar],
         )
         .unwrap();
@@ -214,30 +226,45 @@ mod tests {
         assert_eq!(
             Err(SimpleProgramError::AlreadyInUse.into()),
             do_process_instruction(
-                initialize(&program_id, &simple_program_account_id, &authority).unwrap(),
-                vec![&mut simple_program_account, &mut rent_sysvar]
+                initialize(&program_id, &simple_program_account_id, &moebius_program_id).unwrap(),
+                vec![&mut simple_program_account, &mut rent_sysvar],
             )
         );
 
         let simple_program = SimpleProgram::unpack(&simple_program_account.data).unwrap();
 
+        let (expected_authority, _) = Pubkey::find_program_address(
+            &[
+                &program_id.to_bytes(),
+                &simple_program_account_id.to_bytes(),
+            ],
+            &moebius_program_id,
+        );
+
         assert_eq!(simple_program.is_initialized, true);
-        assert_eq!(simple_program.authority, authority);
+        assert_eq!(simple_program.authority, expected_authority);
     }
 
     #[test]
     fn test_update_state() {
         let program_id = pubkey_rand();
-        let authority_key = pubkey_rand();
-        let mut authority = SolanaAccount::default();
         let simple_program_account_id = pubkey_rand();
         let mut simple_program_account =
             SolanaAccount::new(minimum_balance(), SimpleProgram::LEN, &program_id);
         let mut rent_sysvar = rent_sysvar();
+        let moebius_program_id = pubkey_rand();
+        let (authority_key, _) = Pubkey::find_program_address(
+            &[
+                &program_id.to_bytes(),
+                &simple_program_account_id.to_bytes(),
+            ],
+            &moebius_program_id,
+        );
+        let mut authority = SolanaAccount::default();
 
         // create new simple_program account.
         do_process_instruction(
-            initialize(&program_id, &simple_program_account_id, &authority_key).unwrap(),
+            initialize(&program_id, &simple_program_account_id, &moebius_program_id).unwrap(),
             vec![&mut simple_program_account, &mut rent_sysvar],
         )
         .unwrap();

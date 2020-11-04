@@ -5,8 +5,7 @@ authors = ["Rohit Narurkar <rohit.narurkar@protonmail.com>"]
 edition = "2018"
 
 [features]
-exclude_entrypoint = []
-program = []
+no-entrypoint = []
 
 [dependencies]
 num-derive = "0.3"

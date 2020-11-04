@@ -25,8 +25,8 @@ pub enum SimpleProgramInstruction {
     ///   1. `[]` Rent sysvar
     ///
     Initialize {
-        /// The authority that can transport arbitrary data over Moebius.
-        authority: Pubkey,
+        /// Moebius program's ID
+        moebius_program_id: Pubkey,
     },
     /// Updates the state of Simple program.
     UpdateState {
@@ -44,9 +44,11 @@ impl SimpleProgramInstruction {
     pub fn pack(&self) -> Vec<u8> {
         let mut buf = Vec::with_capacity(size_of::<Self>());
         match self {
-            Self::Initialize { ref authority } => {
+            Self::Initialize {
+                ref moebius_program_id,
+            } => {
                 buf.push(0);
-                buf.extend_from_slice(authority.as_ref());
+                buf.extend_from_slice(moebius_program_id.as_ref());
             }
             Self::UpdateState {
                 val_bytes32,
@@ -70,8 +72,8 @@ impl SimpleProgramInstruction {
         let (&tag, rest) = input.split_first().ok_or(InvalidInstruction)?;
         Ok(match tag {
             0 => {
-                let (authority, _rest) = Self::unpack_pubkey(rest)?;
-                Self::Initialize { authority }
+                let (moebius_program_id, _rest) = Self::unpack_pubkey(rest)?;
+                Self::Initialize { moebius_program_id }
             }
             1 => {
                 let (val_bytes32_slice, rest) = rest.split_at(32);
@@ -109,10 +111,10 @@ impl SimpleProgramInstruction {
 pub fn initialize(
     program_id: &Pubkey,
     simple_program_account_id: &Pubkey,
-    authority: &Pubkey,
+    moebius_program_id: &Pubkey,
 ) -> Result<Instruction, ProgramError> {
     let data = SimpleProgramInstruction::Initialize {
-        authority: *authority,
+        moebius_program_id: *moebius_program_id,
     }
     .pack();
 
@@ -170,7 +172,7 @@ mod tests {
     #[test]
     fn test_initialize_packing() {
         let check = SimpleProgramInstruction::Initialize {
-            authority: Pubkey::new(&[2u8; 32]),
+            moebius_program_id: Pubkey::new(&[2u8; 32]),
         };
         let packed = check.pack();
         let mut expect = vec![0u8]; // Initialize tag.
