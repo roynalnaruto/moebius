@@ -14,8 +14,7 @@ path = "src/bin/main.rs"
 
 [dependencies]
 anyhow = "1.0.32"
-# ethers = { git = "https://github.com/gakonst/ethers-rs" }
-ethers = { path = "../../forks/ethers-rs-1/ethers", version = "0.1.3" }
+ethers = { git = "https://github.com/gakonst/ethers-rs" }
 gumdrop = "0.8.0"
 serde = "1.0.114"
 serde_json = "1.0.57"
@@ -23,5 +22,4 @@ thiserror = "1.0.20"
 tokio = { version = "0.2.22", features = ["macros"] }
 
 [build-dependencies]
-# ethers = { git = "https://github.com/gakonst/ethers-rs", features = ["abigen"] }
-ethers = { path = "../../forks/ethers-rs-1/ethers", version = "0.1.3", features = ["abigen"] }
+ethers = { git = "https://github.com/gakonst/ethers-rs", features = ["abigen"] }

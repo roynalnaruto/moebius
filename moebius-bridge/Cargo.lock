@@ -344,6 +344,7 @@ dependencies = [
 [[package]]
 name = "ethers"
 version = "0.1.3"
+source = "git+https://github.com/gakonst/ethers-rs#c30f45fc72ca4751c09b08967f12f9b031da62b7"
 dependencies = [
  "ethers-contract",
  "ethers-core",
@@ -355,6 +356,7 @@ dependencies = [
 [[package]]
 name = "ethers-contract"
 version = "0.1.3"
+source = "git+https://github.com/gakonst/ethers-rs#c30f45fc72ca4751c09b08967f12f9b031da62b7"
 dependencies = [
  "ethers-contract-abigen",
  "ethers-contract-derive",
@@ -371,6 +373,7 @@ dependencies = [
 [[package]]
 name = "ethers-contract-abigen"
 version = "0.1.3"
+source = "git+https://github.com/gakonst/ethers-rs#c30f45fc72ca4751c09b08967f12f9b031da62b7"
 dependencies = [
  "Inflector",
  "anyhow",
@@ -388,6 +391,7 @@ dependencies = [
 [[package]]
 name = "ethers-contract-derive"
 version = "0.1.3"
+source = "git+https://github.com/gakonst/ethers-rs#c30f45fc72ca4751c09b08967f12f9b031da62b7"
 dependencies = [
  "ethers-contract-abigen",
  "ethers-core",
@@ -400,6 +404,7 @@ dependencies = [
 [[package]]
 name = "ethers-core"
 version = "0.1.3"
+source = "git+https://github.com/gakonst/ethers-rs#c30f45fc72ca4751c09b08967f12f9b031da62b7"
 dependencies = [
  "arrayvec",
  "ecdsa",
@@ -421,6 +426,7 @@ dependencies = [
 [[package]]
 name = "ethers-middleware"
 version = "0.1.3"
+source = "git+https://github.com/gakonst/ethers-rs#c30f45fc72ca4751c09b08967f12f9b031da62b7"
 dependencies = [
  "async-trait",
  "ethers-core",
@@ -437,6 +443,7 @@ dependencies = [
 [[package]]
 name = "ethers-providers"
 version = "0.1.3"
+source = "git+https://github.com/gakonst/ethers-rs#c30f45fc72ca4751c09b08967f12f9b031da62b7"
 dependencies = [
  "async-trait",
  "async-tungstenite",
@@ -458,6 +465,7 @@ dependencies = [
 [[package]]
 name = "ethers-signers"
 version = "0.1.3"
+source = "git+https://github.com/gakonst/ethers-rs#c30f45fc72ca4751c09b08967f12f9b031da62b7"
 dependencies = [
  "async-trait",
  "elliptic-curve",
