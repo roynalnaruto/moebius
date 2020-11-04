@@ -5,6 +5,12 @@
       {
         "indexed": false,
         "internalType": "bytes32",
+        "name": "_programId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "internalType": "bytes32",
         "name": "_accountId",
         "type": "bytes32"
       },

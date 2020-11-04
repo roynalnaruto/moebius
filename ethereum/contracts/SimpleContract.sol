@@ -3,17 +3,20 @@ pragma solidity ^0.7.0;
 
 
 contract SimpleContract {
+  bytes32 programId;
   bytes32 accountId;
   bytes32 valBytes32;
   address valAddress;
   uint256 valUint256;
 
   constructor(
+    bytes32 _programId,
     bytes32 _accountId,
     bytes32 _valBytes32,
     address _valAddress,
     uint256 _valUint256
   ) {
+    programId = _programId;
     accountId = _accountId;
     valBytes32 = _valBytes32;
     valAddress = _valAddress;
@@ -21,15 +24,13 @@ contract SimpleContract {
   }
 
   function setAndGetValues(
-    bytes32 _newAccountId,
     bytes32 _newValBytes32,
     address _newValAddress,
     uint256 _newValUint256
   )
     public
-    returns (bytes32, bytes memory)
+    returns (bytes32, bytes32, bytes memory)
   {
-    accountId = _newAccountId;
     valBytes32 = _newValBytes32;
     valAddress = _newValAddress;
     valUint256 = _newValUint256;
@@ -39,8 +40,9 @@ contract SimpleContract {
   function getValues()
     public
     view
-    returns (bytes32 _accountId, bytes memory _packedData)
+    returns (bytes32 _programId, bytes32 _accountId, bytes memory _packedData)
   {
+    _programId = programId;
     _accountId = accountId;
     _packedData = abi.encode(valBytes32, valAddress, valUint256);
   }

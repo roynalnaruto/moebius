@@ -33,12 +33,15 @@ async function main() {
   await moebius.deployed();
   log.info("Moebius deployed at: ", moebius.address);
 
+  const programId = hre.ethers.utils.hexlify(hre.ethers.utils.randomBytes(32));
+  const accountId = hre.ethers.utils.hexlify(hre.ethers.utils.randomBytes(32));
   const SimpleContract = await hre.ethers.getContractFactory("SimpleContract");
   const simpleContract = await SimpleContract.deploy(
-    hre.ethers.utils.hexlify(hre.ethers.utils.randomBytes(32)),
-    hre.ethers.utils.hexlify(hre.ethers.utils.randomBytes(32)),
-    hre.ethers.utils.hexlify(hre.ethers.utils.randomBytes(20)),
-    hre.ethers.BigNumber.from(hre.ethers.utils.randomBytes(32)),
+    programId,                                                   // programId
+    accountId,                                                   // accountId
+    hre.ethers.utils.hexlify(hre.ethers.utils.randomBytes(32)),  // valBytes32
+    hre.ethers.utils.hexlify(hre.ethers.utils.randomBytes(20)),  // valAddress
+    hre.ethers.BigNumber.from(hre.ethers.utils.randomBytes(32)), // valUint256
   );
   await simpleContract.deployed();
   log.info("SimpleContract deployed at: ", simpleContract.address);
@@ -47,7 +50,6 @@ async function main() {
   while (true) {
     const data = simpleContract.interface.encodeFunctionData(
       "setAndGetValues", [
-        hre.ethers.utils.hexlify(hre.ethers.utils.randomBytes(32)),
         hre.ethers.utils.hexlify(hre.ethers.utils.randomBytes(32)),
         hre.ethers.utils.hexlify(hre.ethers.utils.randomBytes(20)),
         hre.ethers.BigNumber.from(hre.ethers.utils.randomBytes(32)),
