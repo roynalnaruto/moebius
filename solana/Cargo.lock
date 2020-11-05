@@ -1469,6 +1469,20 @@ dependencies = [
 [[package]]
 name = "moebius-cli"
 version = "0.1.0"
+dependencies = [
+ "clap",
+ "console 0.13.0",
+ "moebius",
+ "serde_json",
+ "solana-account-decoder",
+ "solana-clap-utils",
+ "solana-cli-config",
+ "solana-cli-output",
+ "solana-client",
+ "solana-logger",
+ "solana-remote-wallet",
+ "solana-sdk",
+]
 
 [[package]]
 name = "native-tls"

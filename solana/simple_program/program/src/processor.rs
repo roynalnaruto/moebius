@@ -142,7 +142,6 @@ mod tests {
     use solana_program::{
         instruction::Instruction,
         program_error::{PrintProgramError, ProgramError},
-        sysvar::rent,
     };
     use solana_sdk::account::{
         create_account, create_is_signer_account_infos, Account as SolanaAccount,

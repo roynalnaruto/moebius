@@ -4,8 +4,8 @@ use clap::{
 use simple_program::{instruction::initialize, state::SimpleProgram};
 use solana_clap_utils::{
     fee_payer::fee_payer_arg,
-    input_parsers::{pubkey_of, pubkey_of_signer, signer_of},
-    input_validators::{is_url, is_valid_pubkey, is_valid_signer},
+    input_parsers::{pubkey_of_signer, signer_of},
+    input_validators::{is_url, is_valid_signer},
     keypair::{signer_from_path, DefaultSigner},
     nonce::*,
     offline::*,
@@ -17,14 +17,15 @@ use solana_client::{
 use solana_remote_wallet::remote_wallet::RemoteWalletManager;
 use solana_sdk::{
     commitment_config::CommitmentConfig, instruction::Instruction, message::Message,
-    native_token::*, program_pack::Pack, pubkey::Pubkey, signature::Keypair, signature::Signer,
-    system_instruction, transaction::Transaction,
+    native_token::*, program_pack::Pack, pubkey::Pubkey, signature::Signer, system_instruction,
+    transaction::Transaction,
 };
 use std::{process::exit, sync::Arc};
 
 type Error = Box<dyn std::error::Error>;
 type CommandResult = Result<Option<(u64, Vec<Vec<Instruction>>)>, Error>;
 
+#[allow(dead_code)]
 struct Config {
     rpc_client: RpcClient,
     verbose: bool,
@@ -73,7 +74,7 @@ pub fn signers_of(
     }
 }
 
-fn command_initialize(config: &Config) -> CommandResult {
+fn command_initialize(config: &Config, account: Pubkey) -> CommandResult {
     let minimum_balance_for_rent_exemption = if !config.sign_only {
         config
             .rpc_client
@@ -81,9 +82,6 @@ fn command_initialize(config: &Config) -> CommandResult {
     } else {
         0
     };
-
-    let account_key = Keypair::new();
-    let account = account_key.pubkey();
 
     let instructions = vec![
         system_instruction::create_account(
@@ -155,6 +153,18 @@ fn main() {
         .subcommand(
             SubCommand::with_name("initialize")
                 .about("Initialize Simple Program")
+                .arg(
+                    Arg::with_name("account-keypair")
+                        .long("account-keypair")
+                        .value_name("ACCOUNT_KEYPAIR")
+                        .validator(is_valid_signer)
+                        .takes_value(true)
+                        .help(
+                            "Specify the simple program account. \
+                             This may be a keypair file, the ASK keyword. \
+                             Defaults to the client keypair.",
+                        ),
+                )
                 .nonce_args(true)
                 .offline_args(),
         )
@@ -252,7 +262,16 @@ fn main() {
     solana_logger::setup_with_default("solana=info");
 
     let _ = match (sub_command, sub_matches) {
-        ("initialize", Some(_arg_matches)) => command_initialize(&config),
+        ("initialize", Some(arg_matches)) => {
+            let (signer, account) = signer_of(&arg_matches, "account-keypair", &mut wallet_manager)
+                .unwrap_or_else(|e| {
+                    eprintln!("error: {}", e);
+                    exit(1);
+                });
+            bulk_signers.push(signer);
+
+            command_initialize(&config, account.unwrap())
+        }
         _ => unreachable!(),
     }
     .and_then(|transaction_info| {

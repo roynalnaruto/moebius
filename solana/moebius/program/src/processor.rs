@@ -111,13 +111,16 @@ impl Processor {
 
         // Construct the instruction to be invoked in the target program, that will be signed by
         // Moebius program.
+        let mut target_data = Vec::with_capacity(data.len() + 1);
+        target_data.push(1u8); // tag for update state instruction in moebius compatible programs.
+        target_data.extend_from_slice(data.as_slice());
         let target_update_instruction = Instruction {
             program_id: *target_program_account_info.key,
             accounts: vec![
                 AccountMeta::new(*caller_account_info.key, true),
                 AccountMeta::new(*target_account_account_info.key, false),
             ],
-            data,
+            data: target_data,
         };
 
         // Invoke the instruction in the target program. An authorised invocation should update
@@ -169,7 +172,6 @@ mod tests {
     use solana_program::{
         instruction::Instruction,
         program_error::{PrintProgramError, ProgramError},
-        sysvar::rent,
     };
     use solana_sdk::account::{
         create_account, create_is_signer_account_infos, Account as SolanaAccount,

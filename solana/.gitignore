@@ -3,5 +3,6 @@ target
 .vscode
 bin
 config.json
+*.so
 node_modules
 ./package-lock.json
