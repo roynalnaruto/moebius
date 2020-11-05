@@ -1462,6 +1462,7 @@ dependencies = [
  "rand",
  "remove_dir_all",
  "solana-program",
+ "solana-sdk",
  "thiserror",
 ]
 
@@ -2333,6 +2334,7 @@ dependencies = [
  "rand",
  "remove_dir_all",
  "solana-program",
+ "solana-sdk",
  "thiserror",
 ]
 
