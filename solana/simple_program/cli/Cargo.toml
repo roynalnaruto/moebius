@@ -17,6 +17,7 @@ solana-logger = "1.4.4"
 solana-remote-wallet = "1.4.4"
 solana-sdk = "1.4.4"
 
+# programs
 moebius = { version = "0.1.0", path = "../../moebius/program", features = [ "no-entrypoint" ] }
 simple-program = { version = "0.1.0", path="../program", features = [ "no-entrypoint" ] }
 

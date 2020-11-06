@@ -129,6 +129,7 @@ impl Processor {
             &target_update_instruction,
             &[
                 caller_account_info.clone(),
+                target_program_account_info.clone(),
                 target_account_account_info.clone(),
             ],
             &[caller_account_signer_seeds],

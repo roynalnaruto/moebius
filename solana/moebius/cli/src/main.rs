@@ -5,6 +5,7 @@ use moebius::{
     instruction::{initialize, update_data},
     state::Moebius,
 };
+use rand::RngCore;
 use solana_clap_utils::{
     fee_payer::fee_payer_arg,
     input_parsers::{pubkey_of, pubkey_of_signer, signer_of},
@@ -57,6 +58,12 @@ fn check_fee_payer_balance(config: &Config, required_balance: u64) -> Result<(),
     }
 }
 
+fn rand_bytes(n: usize) -> Vec<u8> {
+    let mut output = vec![0u8; n];
+    rand::thread_rng().fill_bytes(output.as_mut_slice());
+    output
+}
+
 type SignersOf = Vec<(Box<dyn Signer>, Pubkey)>;
 pub fn signers_of(
     matches: &ArgMatches<'_>,
@@ -104,21 +111,13 @@ fn command_initialize(config: &Config, account: &Pubkey) -> CommandResult {
 }
 
 fn command_update_data(
-    config: &Config,
+    _config: &Config,
     moebius_account: &Pubkey,
     authority: &Pubkey,
     target_program: &Pubkey,
     target_account: &Pubkey,
     data: Vec<u8>,
 ) -> CommandResult {
-    let minimum_balance_for_rent_exemption = if !config.sign_only {
-        config
-            .rpc_client
-            .get_minimum_balance_for_rent_exemption(Moebius::LEN)?
-    } else {
-        0
-    };
-
     let (caller_account, _) = Pubkey::find_program_address(
         &[&target_program.to_bytes(), &target_account.to_bytes()],
         &moebius::id(),
@@ -134,10 +133,7 @@ fn command_update_data(
         data,
     )?];
 
-    Ok(Some((
-        minimum_balance_for_rent_exemption,
-        vec![instructions],
-    )))
+    Ok(Some((0u64, vec![instructions])))
 }
 
 fn main() {
@@ -372,7 +368,15 @@ fn main() {
                 );
             bulk_signers.push(signer);
 
-            let data = vec![0u8];
+            let mut data: Vec<u8> = vec![];
+            let rand_val_bytes32 = rand_bytes(32usize);
+            let rand_val_address = rand_bytes(20usize);
+            let rand_val_uint256 = rand_bytes(32usize);
+            data.extend_from_slice(rand_val_bytes32.as_slice());
+            data.extend_from_slice(&[0u8; 12]);
+            data.extend_from_slice(rand_val_address.as_slice());
+            data.extend_from_slice(rand_val_uint256.as_slice());
+            println!("data = {:?}", data);
             command_update_data(
                 &config,
                 &moebius_account,
