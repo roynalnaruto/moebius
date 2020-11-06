@@ -9,5 +9,8 @@
     "ethers": "^5.0.19",
     "hardhat": "^2.0.2",
     "pretty-logger": "^0.1.2"
+  },
+  "dependencies": {
+    "bs58": "^4.0.1"
   }
 }

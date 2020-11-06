@@ -3,6 +3,7 @@
 //
 // When running the script with `hardhat run <script>` you'll find the Hardhat
 // Runtime Environment's members available in the global scope.
+const bs58 = require("bs58")
 const hre = require("hardhat");
 const Logger = require("pretty-logger");
 
@@ -25,7 +26,7 @@ async function main() {
   // If this script is run directly using `node` you may want to call compile
   // manually to make sure everything is compiled
   const log = new Logger(customConfig)
-  await hre.run('compile');
+  await hre.run("compile");
 
   // We get the contract to deploy
   const Moebius = await hre.ethers.getContractFactory("Moebius");
@@ -33,12 +34,14 @@ async function main() {
   await moebius.deployed();
   log.info("Moebius deployed at: ", moebius.address);
 
-  const programId = hre.ethers.utils.hexlify(hre.ethers.utils.randomBytes(32));
-  const accountId = hre.ethers.utils.hexlify(hre.ethers.utils.randomBytes(32));
+  // Solana program ID and account in the base58 format.
+  simpleProgramId = "9rCXCJDsnS53QtdXvYhYCAxb6yBE16KAQx5zHWfHe9QF";
+  simpleAccountId = "Bt9xbg8fz3mQCuk4jwso1Daj9pLwPiXtgHeMZqUhuS9A";
+
   const SimpleContract = await hre.ethers.getContractFactory("SimpleContract");
   const simpleContract = await SimpleContract.deploy(
-    programId,                                                   // programId
-    accountId,                                                   // accountId
+    "0x".concat(bs58.decode(simpleProgramId).toString("hex")),   // programId
+    "0x".concat(bs58.decode(simpleAccountId).toString("hex")),   // accountId
     hre.ethers.utils.hexlify(hre.ethers.utils.randomBytes(32)),  // valBytes32
     hre.ethers.utils.hexlify(hre.ethers.utils.randomBytes(20)),  // valAddress
     hre.ethers.BigNumber.from(hre.ethers.utils.randomBytes(32)), // valUint256
