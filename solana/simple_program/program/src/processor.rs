@@ -75,7 +75,7 @@ impl Processor {
         // Initialize the state of simple program account and write it.
         let state = SimpleProgram {
             is_initialized: true,
-            authority: authority,
+            authority,
             val_bytes32: [0u8; 32],
             val_address: [0u8; 20],
             val_uint256: [0u8; 32],

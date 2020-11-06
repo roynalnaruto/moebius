@@ -1,6 +1,4 @@
-use clap::{
-    crate_description, crate_name, crate_version, App, AppSettings, Arg, ArgMatches, SubCommand,
-};
+use clap::{crate_description, crate_name, crate_version, App, AppSettings, Arg, SubCommand};
 use moebius::{
     instruction::{initialize, update_data},
     state::Moebius,
@@ -18,13 +16,12 @@ use solana_cli_output::{return_signers, OutputFormat};
 use solana_client::{
     blockhash_query::BlockhashQuery, rpc_client::RpcClient, rpc_config::RpcSendTransactionConfig,
 };
-use solana_remote_wallet::remote_wallet::RemoteWalletManager;
 use solana_sdk::{
     commitment_config::CommitmentConfig, instruction::Instruction, message::Message,
     native_token::*, program_pack::Pack, pubkey::Pubkey, signature::Signer, system_instruction,
     transaction::Transaction,
 };
-use std::{process::exit, sync::Arc};
+use std::process::exit;
 
 type Error = Box<dyn std::error::Error>;
 type CommandResult = Result<Option<(u64, Vec<Vec<Instruction>>)>, Error>;
@@ -62,26 +59,6 @@ fn rand_bytes(n: usize) -> Vec<u8> {
     let mut output = vec![0u8; n];
     rand::thread_rng().fill_bytes(output.as_mut_slice());
     output
-}
-
-type SignersOf = Vec<(Box<dyn Signer>, Pubkey)>;
-pub fn signers_of(
-    matches: &ArgMatches<'_>,
-    name: &str,
-    wallet_manager: &mut Option<Arc<RemoteWalletManager>>,
-) -> Result<Option<SignersOf>, Box<dyn std::error::Error>> {
-    if let Some(values) = matches.values_of(name) {
-        let mut results = Vec::new();
-        for (i, value) in values.enumerate() {
-            let name = format!("{}-{}", name, i + 1);
-            let signer = signer_from_path(matches, value, &name, wallet_manager)?;
-            let signer_pubkey = signer.pubkey();
-            results.push((signer, signer_pubkey));
-        }
-        Ok(Some(results))
-    } else {
-        Ok(None)
-    }
 }
 
 fn command_initialize(config: &Config, account: &Pubkey) -> CommandResult {
@@ -376,7 +353,6 @@ fn main() {
             data.extend_from_slice(&[0u8; 12]);
             data.extend_from_slice(rand_val_address.as_slice());
             data.extend_from_slice(rand_val_uint256.as_slice());
-            println!("data = {:?}", data);
             command_update_data(
                 &config,
                 &moebius_account,

@@ -51,7 +51,7 @@ impl Processor {
 
         let moebius = Moebius {
             is_initialized: true,
-            authority: authority,
+            authority,
         };
         Moebius::pack(moebius, &mut moebius_account_info.data.borrow_mut())?;
 
