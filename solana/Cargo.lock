@@ -3485,6 +3485,40 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f7fe0bb3479651439c9112f72b6c505038574c9fbb575ed1bf3b797fa39dd564"
 
 [[package]]
+name = "uniswap-oracle-cli"
+version = "0.1.0"
+dependencies = [
+ "clap",
+ "console 0.13.0",
+ "moebius",
+ "serde_json",
+ "solana-account-decoder",
+ "solana-clap-utils",
+ "solana-cli-config",
+ "solana-cli-output",
+ "solana-client",
+ "solana-logger",
+ "solana-remote-wallet",
+ "solana-sdk",
+ "uniswap-program",
+]
+
+[[package]]
+name = "uniswap-program"
+version = "0.1.0"
+dependencies = [
+ "arrayref",
+ "num-derive",
+ "num-traits",
+ "num_enum",
+ "rand",
+ "remove_dir_all",
+ "solana-program",
+ "solana-sdk",
+ "thiserror",
+]
+
+[[package]]
 name = "untrusted"
 version = "0.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"

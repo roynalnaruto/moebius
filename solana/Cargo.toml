@@ -4,4 +4,6 @@ members = [
   "moebius/program",
   "simple_program/cli",
   "simple_program/program",
+  "uniswap_oracle/cli",
+  "uniswap_oracle/program",
 ]
