@@ -3,7 +3,7 @@
 //
 // When running the script with `hardhat run <script>` you'll find the Hardhat
 // Runtime Environment's members available in the global scope.
-const bs58 = require("bs58")
+const bs58 = require("bs58");
 const hre = require("hardhat");
 const Logger = require("pretty-logger");
 
@@ -25,7 +25,7 @@ async function main() {
   //
   // If this script is run directly using `node` you may want to call compile
   // manually to make sure everything is compiled
-  const log = new Logger(customConfig)
+  const log = new Logger(customConfig);
   await hre.run("compile");
 
   // We get the contract to deploy

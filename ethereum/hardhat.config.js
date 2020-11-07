@@ -27,6 +27,11 @@ module.exports = {
       url: "http://localhost:8545",
       network_id: 98765,
       mnemonic: "these are simply test words my friend"
+    },
+    ropsten: {
+      url: `https://ropsten.infura.io/v3/${process.env.INFRA_API_KEY}`,
+      network_id: 2,
+      accounts: [`${process.env.PRIVATE_KEY}`]
     }
   }
 };
