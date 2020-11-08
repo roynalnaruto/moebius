@@ -1,9 +1,12 @@
 [workspace]
 members = [
   "moebius/cli",
-  "moebius/program",
   "simple_program/cli",
-  "simple_program/program",
   "uniswap_oracle/cli",
+
+  "moebius/program",
+  "simple_program/program",
   "uniswap_oracle/program",
+
+  "reporter",
 ]

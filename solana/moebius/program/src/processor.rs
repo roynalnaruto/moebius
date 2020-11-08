@@ -41,7 +41,8 @@ impl Processor {
         let moebius_data_len = moebius_account_info.data_len();
         let rent = &Rent::from_account_info(next_account_info(account_info_iter)?)?;
 
-        if moebius_account_info.data.borrow()[0] != 0u8 {
+        let moebius = Moebius::unpack_unchecked(&moebius_account_info.data.borrow())?;
+        if moebius.is_initialized {
             return Err(MoebiusError::AlreadyInUse.into());
         }
 
