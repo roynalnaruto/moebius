@@ -9,9 +9,11 @@ use solana_program::{
     decode_error::DecodeError,
     entrypoint::ProgramResult,
     info,
+    program::{invoke, invoke_signed},
     program_error::{PrintProgramError, ProgramError},
     program_pack::Pack,
     pubkey::Pubkey,
+    system_instruction,
     sysvar::{rent::Rent, Sysvar},
 };
 
@@ -23,9 +25,23 @@ impl Processor {
         let instruction = UniswapOracleInstruction::unpack(input)?;
 
         match instruction {
-            UniswapOracleInstruction::Initialize { moebius_program_id } => {
+            UniswapOracleInstruction::Initialize {
+                moebius_program_id,
+                token0,
+                decimal0,
+                token1,
+                decimal1,
+            } => {
                 info!("Instruction: Initialize");
-                Self::process_initialize(program_id, accounts, moebius_program_id)
+                Self::process_initialize(
+                    program_id,
+                    accounts,
+                    moebius_program_id,
+                    token0,
+                    decimal0,
+                    token1,
+                    decimal1,
+                )
             }
             UniswapOracleInstruction::UpdateState {
                 token0,
@@ -44,24 +60,80 @@ impl Processor {
         program_id: &Pubkey,
         accounts: &[AccountInfo],
         moebius_program_id: Pubkey,
+        token0: [u8; 20],
+        decimal0: u8,
+        token1: [u8; 20],
+        decimal1: u8,
     ) -> ProgramResult {
         let account_info_iter = &mut accounts.iter();
+        let payer_info = next_account_info(account_info_iter)?;
         let uniswap_oracle_account_info = next_account_info(account_info_iter)?;
-        let uniswap_oracle_data_len = uniswap_oracle_account_info.data_len();
-        let rent = &Rent::from_account_info(next_account_info(account_info_iter)?)?;
+        let system_program_info = next_account_info(account_info_iter)?;
+        let rent_sysvar_info = next_account_info(account_info_iter)?;
 
-        // Ensure that this account has not already been put into use.
-        let state = UniswapOracle::unpack_unchecked(&uniswap_oracle_account_info.data.borrow())?;
-        if state.is_initialized {
-            return Err(UniswapOracleError::AlreadyInUse.into());
+        // Calculate the program derived address for this uniswap pair, and proceed only if the
+        // account info is for the appropriate pubkey.
+        let (uniswap_oracle_account_id, bump_seed) =
+            Pubkey::find_program_address(&[&token0[..], &token1[..]], program_id);
+        if uniswap_oracle_account_id != *uniswap_oracle_account_info.key {
+            return Err(UniswapOracleError::DerivedAccountMismatch.into());
+        }
+        let create_account_seeds: &[&[_]] = &[&token0[..], &token1[..], &[bump_seed]];
+
+        // Return an error if this account was already initialized
+        if let Ok(state) =
+            UniswapOracle::unpack_unchecked(&uniswap_oracle_account_info.data.borrow())
+        {
+            if state.is_initialized {
+                return Err(UniswapOracleError::AlreadyInUse.into());
+            }
         }
 
-        if !rent.is_exempt(
-            uniswap_oracle_account_info.lamports(),
-            uniswap_oracle_data_len,
-        ) {
-            return Err(UniswapOracleError::NotRentExempt.into());
+        // Fund the associated token account with the minimum balance to be rent exempt
+        let rent = &Rent::from_account_info(rent_sysvar_info)?;
+        let required_lamports = rent
+            .minimum_balance(UniswapOracle::LEN)
+            .max(1)
+            .saturating_sub(uniswap_oracle_account_info.lamports());
+
+        // Fund the account for rent.
+        if required_lamports > 0 {
+            invoke(
+                &system_instruction::transfer(
+                    &payer_info.key,
+                    uniswap_oracle_account_info.key,
+                    required_lamports,
+                ),
+                &[
+                    payer_info.clone(),
+                    uniswap_oracle_account_info.clone(),
+                    system_program_info.clone(),
+                ],
+            )?;
         }
+
+        // Allocate data size for this account.
+        invoke_signed(
+            &system_instruction::allocate(
+                uniswap_oracle_account_info.key,
+                UniswapOracle::LEN as u64,
+            ),
+            &[
+                uniswap_oracle_account_info.clone(),
+                system_program_info.clone(),
+            ],
+            &[&create_account_seeds],
+        )?;
+
+        // Assign the current program as this account's owner.
+        invoke_signed(
+            &system_instruction::assign(uniswap_oracle_account_info.key, &program_id),
+            &[
+                uniswap_oracle_account_info.clone(),
+                system_program_info.clone(),
+            ],
+            &[&create_account_seeds],
+        )?;
 
         // Calculate the program derived address that will be used as authority from Moebius'
         // program.
@@ -77,9 +149,11 @@ impl Processor {
         let state = UniswapOracle {
             is_initialized: true,
             authority,
-            token0: [0u8; 20],
+            token0,
+            decimal0,
             amount0: [0u8; 32],
-            token1: [0u8; 20],
+            token1,
+            decimal1,
             amount1: [0u8; 32],
         };
         UniswapOracle::pack(state, &mut uniswap_oracle_account_info.data.borrow_mut())?;
@@ -102,6 +176,12 @@ impl Processor {
         let mut state =
             UniswapOracle::unpack_unchecked(&uniswap_oracle_account_info.data.borrow())?;
 
+        // If the token pairs are not appropriate, we throw an error.
+        if state.token0 != token0 || state.token1 != token1 {
+            return Err(UniswapOracleError::InvalidAccount.into());
+        }
+
+        // Unauthorized action if the signed caller is not the authority.
         if authority_info.key != &state.authority {
             return Err(UniswapOracleError::Unauthorized.into());
         }
@@ -109,11 +189,9 @@ impl Processor {
             return Err(ProgramError::MissingRequiredSignature);
         }
 
-        state.token0 = token0;
+        // Update the state.
         state.amount0 = amount0;
-        state.token1 = token1;
         state.amount1 = amount1;
-
         UniswapOracle::pack(state, &mut uniswap_oracle_account_info.data.borrow_mut())?;
 
         Ok(())
@@ -128,12 +206,16 @@ impl PrintProgramError for UniswapOracleError {
         match self {
             UniswapOracleError::InvalidInstruction => info!("Error: Invalid instruction"),
             UniswapOracleError::AlreadyInUse => info!("Error: account or token already in use"),
+            UniswapOracleError::DerivedAccountMismatch => {
+                info!("Error: The derived program account does not match the expected account")
+            }
             UniswapOracleError::NotRentExempt => {
                 info!("Error: Lamport balance below rent-exempt threshold")
             }
             UniswapOracleError::Unauthorized => {
                 info!("Error: Account not authorized to do the transaction")
             }
+            UniswapOracleError::InvalidAccount => info!("Error: Invalid account cannot be updated"),
         }
     }
 }
@@ -195,7 +277,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Custom(3)")]
+    #[should_panic(expected = "Custom(5)")]
     fn test_error_unwrap() {
         Err::<(), ProgramError>(return_uniswap_oracle_error_as_program_error()).unwrap();
     }
@@ -203,26 +285,43 @@ mod tests {
     #[test]
     fn test_initialize() {
         let program_id = pubkey_rand();
-        let uniswap_oracle_account_id = pubkey_rand();
-        let mut uniswap_oracle_account = SolanaAccount::new(42, UniswapOracle::LEN, &program_id);
-        let mut rent_sysvar = rent_sysvar();
+        let rand_token0 = rand_bytes(20usize);
+        let rand_token1 = rand_bytes(20usize);
+        let mut token0 = [0u8; 20];
+        let mut token1 = [0u8; 20];
+        let decimal0 = 9u8;
+        let decimal1 = 18u8;
+        token0.copy_from_slice(rand_token0.as_slice());
+        token1.copy_from_slice(rand_token1.as_slice());
+        let (uniswap_oracle_account_id, _) =
+            Pubkey::find_program_address(&[&token0[..], &token1[..]], &program_id);
+        let mut uniswap_oracle_account = SolanaAccount::new(0, UniswapOracle::LEN, &program_id);
+        let payer_id = pubkey_rand();
+        let mut payer_account = SolanaAccount::default();
+        payer_account.lamports = minimum_balance();
         let moebius_program_id = pubkey_rand();
-
-        // when the uniswap_oracle account is not rent exempt.
-        assert_eq!(
-            Err(UniswapOracleError::NotRentExempt.into()),
-            do_process_instruction(
-                initialize(&program_id, &uniswap_oracle_account_id, &moebius_program_id).unwrap(),
-                vec![&mut uniswap_oracle_account, &mut rent_sysvar],
-            )
-        );
-
-        uniswap_oracle_account.lamports = minimum_balance();
+        let mut rent_sysvar = rent_sysvar();
+        let mut system_program_info = SolanaAccount::default();
 
         // create new uniswap_oracle account.
         do_process_instruction(
-            initialize(&program_id, &uniswap_oracle_account_id, &moebius_program_id).unwrap(),
-            vec![&mut uniswap_oracle_account, &mut rent_sysvar],
+            initialize(
+                &program_id,
+                &uniswap_oracle_account_id,
+                &moebius_program_id,
+                &payer_id,
+                token0,
+                decimal0,
+                token1,
+                decimal1,
+            )
+            .unwrap(),
+            vec![
+                &mut payer_account,
+                &mut uniswap_oracle_account,
+                &mut system_program_info,
+                &mut rent_sysvar,
+            ],
         )
         .unwrap();
 
@@ -230,8 +329,23 @@ mod tests {
         assert_eq!(
             Err(UniswapOracleError::AlreadyInUse.into()),
             do_process_instruction(
-                initialize(&program_id, &uniswap_oracle_account_id, &moebius_program_id).unwrap(),
-                vec![&mut uniswap_oracle_account, &mut rent_sysvar],
+                initialize(
+                    &program_id,
+                    &uniswap_oracle_account_id,
+                    &moebius_program_id,
+                    &payer_id,
+                    token0,
+                    decimal0,
+                    token1,
+                    decimal1,
+                )
+                .unwrap(),
+                vec![
+                    &mut payer_account,
+                    &mut uniswap_oracle_account,
+                    &mut system_program_info,
+                    &mut rent_sysvar
+                ],
             )
         );
 
@@ -247,15 +361,28 @@ mod tests {
 
         assert_eq!(uniswap_oracle.is_initialized, true);
         assert_eq!(uniswap_oracle.authority, expected_authority);
+        assert_eq!(uniswap_oracle.token0, token0);
+        assert_eq!(uniswap_oracle.decimal0, decimal0);
+        assert_eq!(uniswap_oracle.amount0, [0u8; 32]);
+        assert_eq!(uniswap_oracle.token1, token1);
+        assert_eq!(uniswap_oracle.decimal1, decimal1);
+        assert_eq!(uniswap_oracle.amount1, [0u8; 32]);
     }
 
     #[test]
     fn test_update_state() {
         let program_id = pubkey_rand();
-        let uniswap_oracle_account_id = pubkey_rand();
-        let mut uniswap_oracle_account =
-            SolanaAccount::new(minimum_balance(), UniswapOracle::LEN, &program_id);
-        let mut rent_sysvar = rent_sysvar();
+        let rand_token0 = rand_bytes(20usize);
+        let rand_token1 = rand_bytes(20usize);
+        let mut token0 = [0u8; 20];
+        let mut token1 = [0u8; 20];
+        token0.copy_from_slice(rand_token0.as_slice());
+        token1.copy_from_slice(rand_token1.as_slice());
+        let decimal0 = 18u8;
+        let decimal1 = 18u8;
+        let (uniswap_oracle_account_id, _) =
+            Pubkey::find_program_address(&[&token0[..], &token1[..]], &program_id);
+        let mut uniswap_oracle_account = SolanaAccount::new(0, UniswapOracle::LEN, &program_id);
         let moebius_program_id = pubkey_rand();
         let (authority_key, _) = Pubkey::find_program_address(
             &[
@@ -265,25 +392,38 @@ mod tests {
             &moebius_program_id,
         );
         let mut authority = SolanaAccount::default();
+        let payer_id = pubkey_rand();
+        let mut payer_account = SolanaAccount::default();
+        let mut rent_sysvar = rent_sysvar();
+        let mut system_program_info = SolanaAccount::default();
 
         // create new uniswap_oracle account.
         do_process_instruction(
-            initialize(&program_id, &uniswap_oracle_account_id, &moebius_program_id).unwrap(),
-            vec![&mut uniswap_oracle_account, &mut rent_sysvar],
+            initialize(
+                &program_id,
+                &uniswap_oracle_account_id,
+                &moebius_program_id,
+                &payer_id,
+                token0,
+                decimal0,
+                token1,
+                decimal1,
+            )
+            .unwrap(),
+            vec![
+                &mut payer_account,
+                &mut uniswap_oracle_account,
+                &mut system_program_info,
+                &mut rent_sysvar,
+            ],
         )
         .unwrap();
 
-        let rand_token0 = rand_bytes(20usize);
         let rand_amount0 = rand_bytes(32usize);
-        let rand_token1 = rand_bytes(20usize);
         let rand_amount1 = rand_bytes(32usize);
-        let mut new_token0 = [0u8; 20];
         let mut new_amount0 = [0u8; 32];
-        let mut new_token1 = [0u8; 20];
         let mut new_amount1 = [0u8; 32];
-        new_token1.copy_from_slice(rand_token1.as_slice());
         new_amount0.copy_from_slice(rand_amount0.as_slice());
-        new_token0.copy_from_slice(rand_token0.as_slice());
         new_amount1.copy_from_slice(rand_amount1.as_slice());
         let not_authority = pubkey_rand();
         assert_eq!(
@@ -293,9 +433,9 @@ mod tests {
                     &program_id,
                     &uniswap_oracle_account_id,
                     &not_authority,
-                    new_token0,
+                    token0,
                     new_amount0,
-                    new_token1,
+                    token1,
                     new_amount1,
                 )
                 .unwrap(),
@@ -308,9 +448,9 @@ mod tests {
                 &program_id,
                 &uniswap_oracle_account_id,
                 &authority_key,
-                new_token0,
+                token0,
                 new_amount0,
-                new_token1,
+                token1,
                 new_amount1,
             )
             .unwrap(),
@@ -320,9 +460,9 @@ mod tests {
 
         let new_state = UniswapOracle::unpack(&uniswap_oracle_account.data).unwrap();
 
-        assert_eq!(new_state.token0, new_token0);
+        assert_eq!(new_state.token0, token0);
         assert_eq!(new_state.amount0, new_amount0);
-        assert_eq!(new_state.token1, new_token1);
+        assert_eq!(new_state.token1, token1);
         assert_eq!(new_state.amount1, new_amount1);
     }
 }

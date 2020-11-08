@@ -1,6 +1,8 @@
 use clap::{
-    crate_description, crate_name, crate_version, App, AppSettings, Arg, ArgMatches, SubCommand,
+    crate_description, crate_name, crate_version, value_t, App, AppSettings, Arg, ArgMatches,
+    SubCommand,
 };
+use rustc_hex::FromHex;
 use solana_clap_utils::{
     fee_payer::fee_payer_arg,
     input_parsers::{pubkey_of_signer, signer_of},
@@ -16,7 +18,7 @@ use solana_client::{
 use solana_remote_wallet::remote_wallet::RemoteWalletManager;
 use solana_sdk::{
     commitment_config::CommitmentConfig, instruction::Instruction, message::Message,
-    native_token::*, program_pack::Pack, pubkey::Pubkey, signature::Signer, system_instruction,
+    native_token::*, program_pack::Pack, pubkey::Pubkey, signature::Signer,
     transaction::Transaction,
 };
 use std::{process::exit, sync::Arc};
@@ -74,7 +76,13 @@ pub fn signers_of(
     }
 }
 
-fn command_initialize(config: &Config, account: Pubkey) -> CommandResult {
+fn command_initialize(
+    config: &Config,
+    token0: [u8; 20],
+    decimal0: u8,
+    token1: [u8; 20],
+    decimal1: u8,
+) -> CommandResult {
     let minimum_balance_for_rent_exemption = if !config.sign_only {
         config
             .rpc_client
@@ -83,16 +91,19 @@ fn command_initialize(config: &Config, account: Pubkey) -> CommandResult {
         0
     };
 
-    let instructions = vec![
-        system_instruction::create_account(
-            &config.fee_payer,
-            &account,
-            minimum_balance_for_rent_exemption,
-            UniswapOracle::LEN as u64,
-            &uniswap_program::id(),
-        ),
-        initialize(&uniswap_program::id(), &account, &moebius::id())?,
-    ];
+    let (account, _) =
+        Pubkey::find_program_address(&[&token0[..], &token1[..]], &uniswap_program::id());
+
+    let instructions = vec![initialize(
+        &uniswap_program::id(),
+        &account,
+        &moebius::id(),
+        &config.owner,
+        token0,
+        decimal0,
+        token1,
+        decimal1,
+    )?];
 
     Ok(Some((
         minimum_balance_for_rent_exemption,
@@ -154,16 +165,36 @@ fn main() {
             SubCommand::with_name("initialize")
                 .about("Initialize Uniswap Oracle")
                 .arg(
-                    Arg::with_name("account-keypair")
-                        .long("account-keypair")
-                        .value_name("ACCOUNT_KEYPAIR")
-                        .validator(is_valid_signer)
+                    Arg::with_name("token0")
+                        .long("token0")
+                        .value_name("TOKEN_0")
                         .takes_value(true)
-                        .help(
-                            "Specify the simple program account. \
-                             This may be a keypair file, the ASK keyword. \
-                             Defaults to the client keypair.",
-                        ),
+                        .required(true)
+                        .help("Hex address of first token in Uniswap pair"),
+                )
+                .arg(
+                    Arg::with_name("decimal0")
+                        .long("decimal0")
+                        .value_name("DECIMAL_0")
+                        .takes_value(true)
+                        .default_value("18")
+                        .help("Decimal places in the first token in Uniswap pair"),
+                )
+                .arg(
+                    Arg::with_name("token1")
+                        .long("token1")
+                        .value_name("TOKEN_1")
+                        .takes_value(true)
+                        .required(true)
+                        .help("Hex address of second token in Uniswap pair"),
+                )
+                .arg(
+                    Arg::with_name("decimal1")
+                        .long("decimal1")
+                        .value_name("DECIMAL_1")
+                        .takes_value(true)
+                        .default_value("18")
+                        .help("Decimal places in the second token in Uniswap pair"),
                 )
                 .nonce_args(true)
                 .offline_args(),
@@ -263,14 +294,31 @@ fn main() {
 
     let _ = match (sub_command, sub_matches) {
         ("initialize", Some(arg_matches)) => {
-            let (signer, account) = signer_of(&arg_matches, "account-keypair", &mut wallet_manager)
-                .unwrap_or_else(|e| {
-                    eprintln!("error: {}", e);
-                    exit(1);
-                });
-            bulk_signers.push(signer);
+            // decode token0
+            let mut token0 = [0u8; 20];
+            let arg_token0 = arg_matches.value_of("token0").unwrap();
+            token0.copy_from_slice(&arg_token0.from_hex::<Vec<u8>>().unwrap_or_else(|e| {
+                eprintln!("decoding token0: {}", e);
+                exit(1);
+            }));
+            let decimal0 = value_t!(arg_matches.value_of("decimal0"), u8).unwrap_or_else(|e| {
+                eprintln!("invalid decimal0: {}", e);
+                exit(1);
+            });
 
-            command_initialize(&config, account.unwrap())
+            // decode token1
+            let mut token1 = [0u8; 20];
+            let arg_token1 = arg_matches.value_of("token1").unwrap();
+            token1.copy_from_slice(&arg_token1.from_hex::<Vec<u8>>().unwrap_or_else(|e| {
+                eprintln!("decoding token1: {}", e);
+                exit(1);
+            }));
+            let decimal1 = value_t!(arg_matches.value_of("decimal1"), u8).unwrap_or_else(|e| {
+                eprintln!("invalid decimal1: {}", e);
+                exit(1);
+            });
+
+            command_initialize(&config, token0, decimal0, token1, decimal1)
         }
         _ => unreachable!(),
     }

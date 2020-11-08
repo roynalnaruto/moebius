@@ -4161,6 +4161,7 @@ dependencies = [
  "clap",
  "console 0.13.0",
  "moebius",
+ "rustc-hex",
  "serde_json",
  "solana-account-decoder",
  "solana-clap-utils",

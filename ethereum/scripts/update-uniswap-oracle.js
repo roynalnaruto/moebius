@@ -20,7 +20,7 @@ async function main() {
   await moebius.deployed();
   log.info("Moebius deployed at: ", moebius.address);
 
-  const uniswapOracle = await hre.ethers.getContractAt("UniswapOracle", "0xe9176c1B9fd2326407EF9033E4730211eaDF6259");
+  const uniswapOracle = await hre.ethers.getContractAt("UniswapOracle", "0x20412cA3DA74560695529C7c5D34C1e766B52AeB");
   await uniswapOracle.deployed();
   log.info("UniswapOracle deployed at: ", uniswapOracle.address);
 

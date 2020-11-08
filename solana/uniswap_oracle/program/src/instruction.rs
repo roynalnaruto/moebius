@@ -5,7 +5,7 @@ use solana_program::{
     instruction::{AccountMeta, Instruction},
     program_error::ProgramError,
     pubkey::Pubkey,
-    sysvar,
+    system_program, sysvar,
 };
 use std::mem::size_of;
 
@@ -27,6 +27,14 @@ pub enum UniswapOracleInstruction {
     Initialize {
         /// Moebius program's ID
         moebius_program_id: Pubkey,
+        /// Address of uniswap pair's first token.
+        token0: [u8; 20],
+        /// Decimal places in the first token.
+        decimal0: u8,
+        /// Address of uniswap pair's second token.
+        token1: [u8; 20],
+        /// Decimal places in the second token.
+        decimal1: u8,
     },
     /// Updates the state of the Uniswap oracle.
     UpdateState {
@@ -48,9 +56,17 @@ impl UniswapOracleInstruction {
         match self {
             Self::Initialize {
                 ref moebius_program_id,
+                token0,
+                decimal0,
+                token1,
+                decimal1,
             } => {
                 buf.push(0);
                 buf.extend_from_slice(moebius_program_id.as_ref());
+                buf.extend_from_slice(&token0[..]);
+                buf.push(*decimal0);
+                buf.extend_from_slice(&token1[..]);
+                buf.push(*decimal1);
             }
             Self::UpdateState {
                 token0,
@@ -79,8 +95,22 @@ impl UniswapOracleInstruction {
         let (&tag, rest) = input.split_first().ok_or(InvalidInstruction)?;
         Ok(match tag {
             0 => {
-                let (moebius_program_id, _rest) = Self::unpack_pubkey(rest)?;
-                Self::Initialize { moebius_program_id }
+                let (moebius_program_id, rest) = Self::unpack_pubkey(rest)?;
+                let (token0_slice, rest) = rest.split_at(20);
+                let (&decimal0, rest) = rest.split_first().ok_or(InvalidInstruction)?;
+                let (token1_slice, rest) = rest.split_at(20);
+                let (&decimal1, _rest) = rest.split_first().ok_or(InvalidInstruction)?;
+                let mut token0 = [0u8; 20];
+                let mut token1 = [0u8; 20];
+                token0.copy_from_slice(&token0_slice[..]);
+                token1.copy_from_slice(&token1_slice[..]);
+                Self::Initialize {
+                    moebius_program_id,
+                    token0,
+                    decimal0,
+                    token1,
+                    decimal1,
+                }
             }
             1 => {
                 let (token0_slice, rest) = rest.split_at(32);
@@ -119,18 +149,30 @@ impl UniswapOracleInstruction {
 }
 
 /// Creates a `Initialize` instruction.
+#[allow(clippy::too_many_arguments)]
 pub fn initialize(
     program_id: &Pubkey,
     uniswap_oracle_account_id: &Pubkey,
     moebius_program_id: &Pubkey,
+    sender: &Pubkey,
+    token0: [u8; 20],
+    decimal0: u8,
+    token1: [u8; 20],
+    decimal1: u8,
 ) -> Result<Instruction, ProgramError> {
     let data = UniswapOracleInstruction::Initialize {
         moebius_program_id: *moebius_program_id,
+        token0,
+        decimal0,
+        token1,
+        decimal1,
     }
     .pack();
 
     let accounts = vec![
+        AccountMeta::new(*sender, true),
         AccountMeta::new(*uniswap_oracle_account_id, false),
+        AccountMeta::new_readonly(system_program::id(), false),
         AccountMeta::new_readonly(sysvar::rent::id(), false),
     ];
 
@@ -186,10 +228,18 @@ mod tests {
     fn test_initialize_packing() {
         let check = UniswapOracleInstruction::Initialize {
             moebius_program_id: Pubkey::new(&[2u8; 32]),
+            token0: [12u8; 20],
+            decimal0: 8u8,
+            token1: [21u8; 20],
+            decimal1: 12u8,
         };
         let packed = check.pack();
         let mut expect = vec![0u8]; // Initialize tag.
         expect.extend_from_slice(&[2u8; 32]);
+        expect.extend_from_slice(&[12u8; 20]);
+        expect.push(8u8);
+        expect.extend_from_slice(&[21u8; 20]);
+        expect.push(12u8);
         assert_eq!(packed, expect);
         let unpacked = UniswapOracleInstruction::unpack(&expect).unwrap();
         assert_eq!(unpacked, check);

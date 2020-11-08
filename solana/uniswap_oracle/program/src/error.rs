@@ -7,12 +7,18 @@ use thiserror::Error;
 /// Errors that may be returned by the Uniswap oracle.
 #[derive(Clone, Debug, Eq, Error, FromPrimitive, PartialEq)]
 pub enum UniswapOracleError {
-    /// Invalid instruction.
-    #[error("Invalid instruction")]
-    InvalidInstruction,
     /// The account cannot be initialized because it is already being used.
     #[error("Already in use")]
     AlreadyInUse,
+    /// The derived program account does not match the expected account.
+    #[error("Derived program account mismatch")]
+    DerivedAccountMismatch,
+    /// This error is thrown if the invalid account is asked to be updated.
+    #[error("Invalid account")]
+    InvalidAccount,
+    /// Invalid instruction.
+    #[error("Invalid instruction")]
+    InvalidInstruction,
     /// Lamport balance below rent-exempt threshold.
     #[error("Lamport balance below rent-exempt threshold")]
     NotRentExempt,

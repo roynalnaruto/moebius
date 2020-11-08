@@ -15,7 +15,7 @@ async function main() {
 
   // Solana program ID and account in the base58 format.
   uniswapProgramId = "G33TSUoKH1xM7bPXTMoQhGQhfwWkWT8dGaW6dunDQoen";
-  uniswapAccountId = "APdzXvwkCGixBQdKbceGyfXjRCDe8q5R3dzJreJoRhDg";
+  uniswapAccountId = "DyYDszBZ8m92i9bJeQMhErkqQ4UPBG4pVZxmQL3CNnC";
 
   const UniswapOracle = await hre.ethers.getContractFactory("UniswapOracle");
   const uniswapOracle = await UniswapOracle.deploy(

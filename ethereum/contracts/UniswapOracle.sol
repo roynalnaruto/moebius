@@ -2,6 +2,7 @@ pragma solidity ^0.7.0;
 
 import '@uniswap/v2-core/contracts/interfaces/IUniswapV2Factory.sol';
 import '@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol';
+import '@uniswap/v2-periphery/contracts/interfaces/IERC20.sol';
 import '@uniswap/lib/contracts/libraries/FixedPoint.sol';
 
 import './libraries/UniswapV2OracleLibrary.sol';
