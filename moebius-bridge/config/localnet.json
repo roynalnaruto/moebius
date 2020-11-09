@@ -1,6 +1,6 @@
 {
-  "MoebiusContract": "0x615C2170d56c35295d5B0c0aeF5423742A4a6562",
+  "MoebiusContract": "0xEthereumContractAddressGoesHere",
   "EthRpcUrl": "http://127.0.0.1:8545",
   "SolanaRpcUrl": "http://127.0.0.1:8899",
-  "MoebiusAccount": "24HnEYTLMiUZNCXZ5vv1CQQrtPbxw5NZyRQTjnME3AC3"
+  "MoebiusAccount": "MoebiusAccountBase58AddressGoesHere"
 }

@@ -29,9 +29,9 @@ module.exports = {
       mnemonic: "these are simply test words my friend"
     },
     ropsten: {
-      url: `https://ropsten.infura.io/v3/${process.env.INFRA_API_KEY}`,
+      url: `https://ropsten.infura.io/v3/${process.env.INFURA_API_KEY}`,
       network_id: 2,
-      accounts: [`${process.env.PRIVATE_KEY}`]
+      accounts: [`${process.env.ETH_PRIVATE_KEY}`]
     }
   }
 };

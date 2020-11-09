@@ -106,37 +106,48 @@ impl SimpleData {
     fn val_uint256(&self) -> String {
         self.val_uint256.to_hex()
     }
-
-    async fn val_as_hex(&self) -> String {
-        String::from("as_hex")
-    }
 }
 
 struct Query;
 
 #[graphql_object(context = "Database")]
 impl Query {
-    async fn simple_data() -> FieldResult<SimpleData> {
-        let task = tokio::task::spawn_blocking(|| {
-            let simple_program_account =
-                Pubkey::from_str("Bt9xbg8fz3mQCuk4jwso1Daj9pLwPiXtgHeMZqUhuS9A").unwrap();
+    async fn simple_data(account_id: String) -> FieldResult<SimpleData> {
+        let simple_program_account = Pubkey::from_str(&account_id).map_err(|e| {
+            FieldError::new(
+                &format!("Could not decode bs58: {}", e),
+                graphql_value!({ "internal_error": "Connection refused" }),
+            )
+        })?;
 
-            let rpc_client = RpcClient::new(String::from("http://localhost:8899"));
+        let task: JoinHandle<Result<SimpleData, FieldError>> =
+            tokio::task::spawn_blocking(move || {
+                let rpc_client = RpcClient::new(String::from("http://localhost:8899"));
 
-            let data = rpc_client
-                .get_account_data(&simple_program_account)
-                .unwrap();
+                let data = rpc_client
+                    .get_account_data(&simple_program_account)
+                    .map_err(|e| {
+                        FieldError::new(
+                            &format!("Could not get account: {}", e),
+                            graphql_value!({ "internal_error": "Connection refused" }),
+                        )
+                    })?;
 
-            let simple = SimpleProgram::unpack_unchecked(data.as_slice()).unwrap();
+                let simple = SimpleProgram::unpack_unchecked(data.as_slice()).map_err(|e| {
+                    FieldError::new(
+                        &format!("Could not unpack account data: {}", e),
+                        graphql_value!({ "internal_error": "Connection refused" }),
+                    )
+                })?;
 
-            SimpleData {
-                val_bytes32: simple.val_bytes32,
-                val_address: simple.val_address,
-                val_uint256: simple.val_uint256,
-            }
-        });
+                Ok(SimpleData {
+                    val_bytes32: simple.val_bytes32,
+                    val_address: simple.val_address,
+                    val_uint256: simple.val_uint256,
+                })
+            });
 
-        Ok(task.await.unwrap())
+        Ok(task.await??)
     }
 
     async fn uniswap_oracle(token0: String, token1: String) -> FieldResult<Pricefeed> {
