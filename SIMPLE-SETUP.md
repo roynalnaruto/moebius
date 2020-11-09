@@ -67,7 +67,7 @@ $ ./target/debug/reporter
 * Query simple data
 ```
 query {
-    simpleData {
+    simpleData(account: "SimpleAccountBase58AddressGoesHere") {
         valBytes32
         valAddress
         valUint256
