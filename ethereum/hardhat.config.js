@@ -30,7 +30,7 @@ module.exports = {
     },
     ropsten: {
       url: `https://ropsten.infura.io/v3/${process.env.INFURA_API_KEY}`,
-      network_id: 2,
+      network_id: 3,
       accounts: [`${process.env.ETH_PRIVATE_KEY}`]
     }
   }
