@@ -1,0 +1,8 @@
+[package]
+name = "moebius-derive"
+version = "0.1.0"
+authors = ["Rohit Narurkar <rohit.narurkar@protonmail.com>"]
+edition = "2018"
+
+[dependencies]
+moebius-derive-impl = { path = "impl" }

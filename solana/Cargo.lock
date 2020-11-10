@@ -44,6 +44,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "another-program"
+version = "0.1.0"
+dependencies = [
+ "arrayref",
+ "moebius-derive",
+ "num-derive",
+ "num-traits",
+ "num_enum",
+ "rand 0.7.3",
+ "remove_dir_all",
+ "solana-program",
+ "solana-sdk",
+ "thiserror",
+]
+
+[[package]]
 name = "ansi_term"
 version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1813,6 +1829,23 @@ dependencies = [
  "solana-logger",
  "solana-remote-wallet",
  "solana-sdk",
+]
+
+[[package]]
+name = "moebius-derive"
+version = "0.1.0"
+dependencies = [
+ "moebius-derive-impl",
+]
+
+[[package]]
+name = "moebius-derive-impl"
+version = "0.1.0"
+dependencies = [
+ "Inflector",
+ "proc-macro2 1.0.24",
+ "quote 1.0.7",
+ "syn 1.0.48",
 ]
 
 [[package]]
