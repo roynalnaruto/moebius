@@ -1,4 +1,4 @@
-# Moebius
+<p align="center"><img src="/assets/transparent-background.png"/></p>
 Moebius is a cross-chain oracle that bridges on-chain Ethereum data to Solana.
 
 ### Overview
