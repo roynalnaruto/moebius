@@ -1,3 +1,4 @@
 /target
 *.key
+authority.json
 testnet.json

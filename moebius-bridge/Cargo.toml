@@ -25,7 +25,7 @@ thiserror = "1.0.20"
 tokio = { version = "0.2.22", features = ["macros"] }
 
 # Solana program
-moebius_program = { package = "moebius", version = "0.1.0", path = "../solana/moebius/program", features = ["no-entrypoint"] }
+moebius_program = { package = "moebius", git = "https://github.com/roynalnaruto/moebius", features = ["no-entrypoint"] }
 
 [build-dependencies]
 ethers = { git = "https://github.com/gakonst/ethers-rs", features = ["abigen"] }
