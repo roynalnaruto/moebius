@@ -31,46 +31,79 @@ impl MoebiusInstruction {
 
                         if let Type::Path(ref p) = field.ty {
                             let input_ty = p.path.segments[0].ident.to_string();
-                            let (field_ty, pack_inst, unpack_inst) = match input_ty.as_ref() {
-                                "bytes32" => (
-                                    quote! { [u8; 32] },
-                                    quote! { buf.extend_from_slice(&#field_ident[..]) },
-                                    quote! {
-                                        let (#field_ident_slice, rest) = rest.split_at(32);
-                                        let mut #field_ident = [0u8; 32];
-                                        #field_ident.copy_from_slice(&#field_ident_slice[..]);
-                                    },
-                                ),
-                                "address" => (
-                                    quote! { [u8; 20] },
-                                    quote! { buf.extend_from_slice(&#field_ident[..]) },
-                                    quote! {
-                                        let (#field_ident_slice, rest) = rest.split_at(20);
-                                        let mut #field_ident = [0u8; 20];
-                                        #field_ident.copy_from_slice(&#field_ident_slice[..]);
-                                    },
-                                ),
-                                "uint256" => (
-                                    quote! { [u8; 32] },
-                                    quote! { buf.extend_from_slice(&#field_ident[..]) },
-                                    quote! {
-                                        let (#field_ident_slice, rest) = rest.split_at(32);
-                                        let mut #field_ident = [0u8; 32];
-                                        #field_ident.copy_from_slice(&#field_ident_slice[..]);
-                                    },
-                                ),
+                            let field_ty = match input_ty.as_ref() {
+                                "address" => quote! { [u8; 20] },
+                                "bytes32" => quote! { [u8; 32] },
+                                "uint256" => quote! { [u8; 32] },
                                 _ => panic!("unexpected type"),
                             };
                             match variant.ident.to_string().as_ref() {
                                 "Initialize" => {
                                     initialize_fields.push(quote! { #field_ident });
                                     initialize_fields_ty.push(field_ty);
+                                    let (pack_inst, unpack_inst) = match input_ty.as_ref() {
+                                        "address" => (
+                                            quote! { buf.extend_from_slice(&#field_ident[..]) },
+                                            quote! {
+                                                let (#field_ident_slice, rest) = rest.split_at(20);
+                                                let mut #field_ident = [0u8; 20];
+                                                #field_ident.copy_from_slice(&#field_ident_slice[..]);
+                                            },
+                                        ),
+                                        "bytes32" => (
+                                            quote! { buf.extend_from_slice(&#field_ident[..]) },
+                                            quote! {
+                                                let (#field_ident_slice, rest) = rest.split_at(32);
+                                                let mut #field_ident = [0u8; 32];
+                                                #field_ident.copy_from_slice(&#field_ident_slice[..]);
+                                            },
+                                        ),
+                                        "uint256" => (
+                                            quote! { buf.extend_from_slice(&#field_ident[..]) },
+                                            quote! {
+                                                let (#field_ident_slice, rest) = rest.split_at(32);
+                                                let mut #field_ident = [0u8; 32];
+                                                #field_ident.copy_from_slice(&#field_ident_slice[..]);
+                                            },
+                                        ),
+                                        _ => panic!("unexpected type"),
+                                    };
                                     initialize_pack_instructions.push(pack_inst);
                                     initialize_unpack_instructions.push(unpack_inst);
                                 }
                                 "UpdateState" => {
                                     update_state_fields.push(quote! { #field_ident });
                                     update_state_fields_ty.push(field_ty);
+                                    let (pack_inst, unpack_inst) = match input_ty.as_ref() {
+                                        "address" => (
+                                            quote! {
+                                                buf.extend_from_slice(&[0u8; 12]);
+                                                buf.extend_from_slice(&#field_ident[..]);
+                                            },
+                                            quote! {
+                                                let (#field_ident_slice, rest) = rest.split_at(32);
+                                                let mut #field_ident = [0u8; 20];
+                                                #field_ident.copy_from_slice(&#field_ident_slice[12..]);
+                                            },
+                                        ),
+                                        "bytes32" => (
+                                            quote! { buf.extend_from_slice(&#field_ident[..]) },
+                                            quote! {
+                                                let (#field_ident_slice, rest) = rest.split_at(32);
+                                                let mut #field_ident = [0u8; 32];
+                                                #field_ident.copy_from_slice(&#field_ident_slice[..]);
+                                            },
+                                        ),
+                                        "uint256" => (
+                                            quote! { buf.extend_from_slice(&#field_ident[..]) },
+                                            quote! {
+                                                let (#field_ident_slice, rest) = rest.split_at(32);
+                                                let mut #field_ident = [0u8; 32];
+                                                #field_ident.copy_from_slice(&#field_ident_slice[..]);
+                                            },
+                                        ),
+                                        _ => panic!("unexpected type"),
+                                    };
                                     update_state_pack_instructions.push(pack_inst);
                                     update_state_unpack_instructions.push(unpack_inst);
                                 }
