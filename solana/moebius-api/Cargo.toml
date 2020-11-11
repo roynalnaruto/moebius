@@ -1,0 +1,13 @@
+[package]
+name = "moebius-api"
+version = "0.1.0"
+authors = ["Rohit Narurkar <rohit.narurkar@protonmail.com>"]
+edition = "2018"
+
+[dependencies]
+anyhow = "1.0.32"
+ethereum-types = "0.9.2"
+rustc-hex = "2.1.0"
+solana-sdk = "1.4.4"
+solana-client = "1.4.4"
+uniswap-program = { path = "../uniswap_oracle/program", features = ["no-entrypoint"] }

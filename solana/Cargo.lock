@@ -1813,6 +1813,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "moebius-api"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "ethereum-types",
+ "rustc-hex",
+ "solana-client",
+ "solana-sdk",
+ "uniswap-program",
+]
+
+[[package]]
 name = "moebius-cli"
 version = "0.1.0"
 dependencies = [

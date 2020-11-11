@@ -1,5 +1,6 @@
 [workspace]
 members = [
+  "moebius-api",
   "moebius-derive",
 
   "moebius/cli",
