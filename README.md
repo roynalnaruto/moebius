@@ -30,6 +30,9 @@ to the Moebius program deployed to Solana by a trusted Moebius authority.
 ## Moebius-Uniswap
 Using Moebius Bridge, the first use-case implemented was to bridge Uniswap time-weighted average prices ([TWAP](https://uniswap.org/docs/v2/core-concepts/oracles/)) from Ethereum contracts to Solana programs.
 
+* A transaction that updated the Uniswap UNI/WETH average price on Ethereum [here](https://ropsten.etherscan.io/tx/0xeeb5f694327ace7195bd7a71ffe8f42d7941c78ecbf63590be22df6a85cef723)
+* A transaction that updated the Uniswap UNI/WETH pricefeed state on Solana [here](https://explorer.solana.com/tx/64bWEPJrG1UPiqktFQ1yXih1kpnnAWUaCAco7vWdxrSjWpEARgLHd5otVfabrNTZvduMHv4PrGJawVprEGGemKjh?cluster=devnet)
+
 #### Ethereum
 The below contracts are deployed on the Ethereum's [Ropsten testnet](https://ropsten.etherscan.io/)
 
