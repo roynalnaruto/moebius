@@ -31,3 +31,6 @@ to the Moebius program deployed to Solana by a trusted Moebius authority.
 * **Prerequisite** [setup guide](./PREREQUISITE-SETUP.md)
 * **Simple Program** [setup and run guide](./SIMPLE-SETUP.md)
 * **Uniswap Oracle** [setup and run guide](./UNISWAP-SETUP.md)
+
+### Setup New Program
+Please follow this [setup guide](./NEW-PROGRAM-SETUP.md)

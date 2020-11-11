@@ -1,5 +1,7 @@
 [workspace]
 members = [
+  "moebius-derive",
+
   "moebius/cli",
   "simple_program/cli",
   "uniswap_oracle/cli",
@@ -9,4 +11,6 @@ members = [
   "uniswap_oracle/program",
 
   "reporter",
+
+  "another_program/program",
 ]
