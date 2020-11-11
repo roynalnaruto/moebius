@@ -13,4 +13,4 @@ COPY config/authority.json config/authority.json
 
 RUN cargo build --release
 
-CMD ["target/release/moebius-bridge", "--config", "/run/secrets/config", "--eth-private-key", "/run/secrets/privkey", "--authority-key", "/run/secrets/authority"]
+CMD ["target/release/moebius-bridge", "--config", "config/testnet.json", "--eth-private-key", "config/testnet.key", "--authority-key", "config/authority.json"]
