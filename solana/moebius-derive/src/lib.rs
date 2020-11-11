@@ -1,1 +1,1 @@
-pub use moebius_derive_impl::moebius_state;
+pub use moebius_derive_impl::{moebius_instruction, moebius_state};
