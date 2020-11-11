@@ -171,7 +171,7 @@ impl Query {
 
         let task: JoinHandle<Result<Pricefeed, FieldError>> =
             tokio::task::spawn_blocking(move || {
-                let rpc_client = RpcClient::new(String::from("http://localhost:8899"));
+                let rpc_client = RpcClient::new(String::from("https://devnet.solana.com"));
 
                 let data = rpc_client.get_account_data(&account).map_err(|e| {
                     FieldError::new(

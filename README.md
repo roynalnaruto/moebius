@@ -27,10 +27,28 @@ that the Moebius bridge is listening for.
 An event with the above signature would be intercepted, parsed and broadcasted
 to the Moebius program deployed to Solana by a trusted Moebius authority.
 
-### Setup Guides
+### Testnet Deployment
+#### Ethereum
+The below contracts are deployed on the Ethereum's [Ropsten testnet](https://ropsten.etherscan.io/)
+
+| Contract       | Address                                                                                                                       |
+|----------------|-------------------------------------------------------------------------------------------------------------------------------|
+| Moebius        | [0x4f2A9aC3A70400636190e1df213Fd7Aa0BCF794d](https://ropsten.etherscan.io/address/0x4f2a9ac3a70400636190e1df213fd7aa0bcf794d) |
+| Uniswap Oracle | [0x20412cA3DA74560695529C7c5D34C1e766B52AeB](https://ropsten.etherscan.io/address/0x20412cA3DA74560695529C7c5D34C1e766B52AeB) |
+
+#### Solana
+The below programs are deployed on Solana's [Devnet](https://explorer.solana.com/?cluster=devnet)
+
+| Program/Account   | Address                                                                                                                                         |
+|-------------------|-------------------------------------------------------------------------------------------------------------------------------------------------|
+| Moebius           | [6kAHanNCT1LKFoMn3fBdyvJuvHLcWhLpJbTpbHpqRiG4](https://explorer.solana.com/address/6kAHanNCT1LKFoMn3fBdyvJuvHLcWhLpJbTpbHpqRiG4?cluster=devnet) |
+| Uniswap Program   | [G33TSUoKH1xM7bPXTMoQhGQhfwWkWT8dGaW6dunDQoen](https://explorer.solana.com/address/G33TSUoKH1xM7bPXTMoQhGQhfwWkWT8dGaW6dunDQoen?cluster=devnet) |
+| Moebius Authority | [BREEUNEkUnR7TidwEGptGDREGD3aVHu5Qv5Bvan9fjP6](https://explorer.solana.com/address/BREEUNEkUnR7TidwEGptGDREGD3aVHu5Qv5Bvan9fjP6?cluster=devnet) |
+
+### Localnet Setup Guides
 * **Prerequisite** [setup guide](./PREREQUISITE-SETUP.md)
 * **Simple Program** [setup and run guide](./SIMPLE-SETUP.md)
 * **Uniswap Oracle** [setup and run guide](./UNISWAP-SETUP.md)
 
-### Setup New Program
+### Create a New Moebius-compatible Program
 Please follow this [setup guide](./NEW-PROGRAM-SETUP.md)
