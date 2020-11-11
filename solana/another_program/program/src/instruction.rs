@@ -13,5 +13,6 @@ pub enum AnotherInstruction {
         id: bytes32,
         token: address,
         amount: uint256,
+        active: bool,
     },
 }

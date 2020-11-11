@@ -54,16 +54,6 @@ impl MoebiusState {
 
                         let input_ty = p.path.segments[0].ident.to_string();
                         let field_ty = match input_ty.as_ref() {
-                            "bytes32" => {
-                                state_size += 32;
-                                fields_size.push(32);
-                                pack_instructions.push(
-                                    quote! { #field_ident_dst.copy_from_slice(&#field_ident[..]) },
-                                );
-                                unpack_instructions
-                                    .push(quote! { let #field_ident = *#field_ident_src });
-                                quote! { [u8; 32] }
-                            }
                             "address" => {
                                 state_size += 20;
                                 fields_size.push(20);
@@ -74,7 +64,7 @@ impl MoebiusState {
                                     .push(quote! { let #field_ident = *#field_ident_src });
                                 quote! { [u8; 20] }
                             }
-                            "uint256" => {
+                            "bytes32" | "uint256" => {
                                 state_size += 32;
                                 fields_size.push(32);
                                 pack_instructions.push(
@@ -83,6 +73,15 @@ impl MoebiusState {
                                 unpack_instructions
                                     .push(quote! { let #field_ident = *#field_ident_src });
                                 quote! { [u8; 32] }
+                            }
+                            "bool" | "uint8" => {
+                                state_size += 1;
+                                fields_size.push(1);
+                                pack_instructions
+                                    .push(quote! { #field_ident_dst[0] = *#field_ident });
+                                unpack_instructions
+                                    .push(quote! { let #field_ident = #field_ident_src[0] });
+                                quote! { u8 }
                             }
                             _ => panic!(format!(
                                 "Unexpected type: \"{}\"\n{}",

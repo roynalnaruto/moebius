@@ -11,4 +11,5 @@ pub struct AnotherState {
     id: bytes32,
     token: address,
     amount: uint256,
+    active: bool,
 }

@@ -33,8 +33,8 @@ impl MoebiusInstruction {
                             let input_ty = p.path.segments[0].ident.to_string();
                             let field_ty = match input_ty.as_ref() {
                                 "address" => quote! { [u8; 20] },
-                                "bytes32" => quote! { [u8; 32] },
-                                "uint256" => quote! { [u8; 32] },
+                                "bytes32" | "uint256" => quote! { [u8; 32] },
+                                "bool" | "uint8" => quote! { u8 },
                                 _ => panic!("unexpected type"),
                             };
                             match variant.ident.to_string().as_ref() {
@@ -50,7 +50,7 @@ impl MoebiusInstruction {
                                                 #field_ident.copy_from_slice(&#field_ident_slice[..]);
                                             },
                                         ),
-                                        "bytes32" => (
+                                        "bytes32" | "uint256" => (
                                             quote! { buf.extend_from_slice(&#field_ident[..]) },
                                             quote! {
                                                 let (#field_ident_slice, rest) = rest.split_at(32);
@@ -58,12 +58,10 @@ impl MoebiusInstruction {
                                                 #field_ident.copy_from_slice(&#field_ident_slice[..]);
                                             },
                                         ),
-                                        "uint256" => (
-                                            quote! { buf.extend_from_slice(&#field_ident[..]) },
+                                        "bool" | "uint8" => (
+                                            quote! { buf.push(*#field_ident) },
                                             quote! {
-                                                let (#field_ident_slice, rest) = rest.split_at(32);
-                                                let mut #field_ident = [0u8; 32];
-                                                #field_ident.copy_from_slice(&#field_ident_slice[..]);
+                                                let (&#field_ident, rest) = rest.split_first().ok_or(InvalidInstruction)?;
                                             },
                                         ),
                                         _ => panic!("unexpected type"),
@@ -86,7 +84,7 @@ impl MoebiusInstruction {
                                                 #field_ident.copy_from_slice(&#field_ident_slice[12..]);
                                             },
                                         ),
-                                        "bytes32" => (
+                                        "bytes32" | "uint256" => (
                                             quote! { buf.extend_from_slice(&#field_ident[..]) },
                                             quote! {
                                                 let (#field_ident_slice, rest) = rest.split_at(32);
@@ -94,12 +92,10 @@ impl MoebiusInstruction {
                                                 #field_ident.copy_from_slice(&#field_ident_slice[..]);
                                             },
                                         ),
-                                        "uint256" => (
-                                            quote! { buf.extend_from_slice(&#field_ident[..]) },
+                                        "bool" | "uint8" => (
+                                            quote! { buf.push(*#field_ident) },
                                             quote! {
-                                                let (#field_ident_slice, rest) = rest.split_at(32);
-                                                let mut #field_ident = [0u8; 32];
-                                                #field_ident.copy_from_slice(&#field_ident_slice[..]);
+                                                let (&#field_ident, rest) = rest.split_first().ok_or(InvalidInstruction)?;
                                             },
                                         ),
                                         _ => panic!("unexpected type"),
