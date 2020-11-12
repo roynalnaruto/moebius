@@ -1896,6 +1896,7 @@ dependencies = [
 [[package]]
 name = "moebius"
 version = "0.1.0"
+source = "git+https://github.com/roynalnaruto/moebius#1f65f0b82fdcb1e7ae90b145ebc4cd59ad187a70"
 dependencies = [
  "arrayref",
  "num-derive",
