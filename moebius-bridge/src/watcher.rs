@@ -1,6 +1,7 @@
 use crate::{bindings::Moebius, broadcaster::Broadcaster};
 
 use ethers::prelude::*;
+use log::info;
 use std::sync::Arc;
 
 pub struct MoebiusWatcher<M> {
@@ -30,11 +31,11 @@ impl<M: Middleware + 'static> MoebiusWatcher<M> {
 
         while let Some(item) = stream.next().await {
             if let Ok(log) = item {
-                let sig = self
+                let tx_sig = self
                     .broadcaster
                     .broadcast(log.program_id, log.account_id, log.packed_data)
                     .await?;
-                dbg!("signature = {:?}", sig);
+                info!("UpdateData: {}", tx_sig);
             }
         }
 

@@ -42,6 +42,7 @@ struct Config {
 async fn main() -> anyhow::Result<()> {
     let opts = Opts::parse_args_default_or_exit();
     let cfg: Config = serde_json::from_reader(File::open(opts.config.clone())?)?;
+    env_logger::init();
 
     if cfg.eth_rpc_url.starts_with("http") {
         let provider = Provider::<Http>::try_from(cfg.eth_rpc_url.clone())?;

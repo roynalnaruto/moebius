@@ -4,7 +4,7 @@ RUN apt-get update && \
     apt-get install -y pkg-config libudev-dev
 
 WORKDIR /usr/src/app
-COPY Cargo.toml Cargo.lock build.rs .
+COPY Cargo.toml Cargo.lock build.rs ./
 COPY abi abi/
 COPY src src/
 COPY config/testnet.json config/testnet.json
